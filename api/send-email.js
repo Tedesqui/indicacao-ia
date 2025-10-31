@@ -1,17 +1,19 @@
 /*
  * Ficheiro: api/send-email.js
  * ROTA: /api/send-email (POST)
+ * CORREÇÃO: Migrado de require para import.
  */
 
-const express = require('express');
-const nodemailer = require('nodemailer');
+import express from 'express';
+import nodemailer from 'nodemailer';
+
 const app = express();
 
 // Aumenta o limite do body JSON para garantir que Express possa ler a requisição POST
 app.use(express.json({ limit: '50mb' })); 
 
 const sendEmailHandler = (req, res) => {
-    // Manipulador GET (opcional, mas evita 404 no log)
+    // Adiciona um manipulador GET (opcional, mas evita 404 no log)
     if (req.method === 'GET') {
         return res.status(405).json({ message: 'Method Not Allowed. Use POST para envio.' });
     }
@@ -20,7 +22,7 @@ const sendEmailHandler = (req, res) => {
         return res.status(405).json({ message: 'Method Not Allowed.' });
     }
 
-    // --- Lógica de Envio de E-mail (Copiada do código anterior) ---
+    // Dados são extraídos do corpo JSON
     const { nome, endereco, descricao, imagem_base64, problema } = req.body; 
     
     // Configura o Nodemailer
@@ -74,8 +76,5 @@ const sendEmailHandler = (req, res) => {
     });
 };
 
-// Exporta o Express App com o manipulador POST
-app.post('/', sendEmailHandler);
-app.get('/', sendEmailHandler); // Adiciona GET para evitar o 404 no log
-
-module.exports = app;
+// Exporta o manipulador para o ambiente Serverless
+export default sendEmailHandler;
