@@ -1,7 +1,7 @@
 /*
  * Ficheiro: api/analyze-problem.js
  * ROTA: /api/analyze-problem (POST)
- * CORREÇÃO: Migrado de require para import.
+ * ATUALIZADO: Inclui pedido de Geocodificação Reversa (street_address, street_position) à IA.
  */
 
 import express from 'express';
@@ -40,8 +40,14 @@ const analyzeProblemHandler = async (req, res) => {
             ? `Localização GPS: Latitude ${latitude}, Longitude ${longitude}.`
             : `Localização GPS indisponível.`;
 
+        // --- PROMPT ATUALIZADO PARA INCLUIR GEOLOCALIZAÇÃO REVERSA ---
         const promptText = `
         Você é um **Assistente de Serviço Cívico e Moderador de Conteúdo**. Sua tarefa primária é analisar a imagem fornecida.
+
+        ***TAREFA DE LOCALIZAÇÃO ADICIONAL (SE COORDENADAS EXISTIREM):***
+        Se as coordenadas LATITUDE: ${latitude} e LONGITUDE: ${longitude} estiverem presentes e forem válidas (ou seja, diferentes de 'null'), use seu conhecimento geográfico para determinar o endereço e a posição na rua.
+        - **Endereço Estimado:** Determine o nome da rua mais próxima e, se possível, a cidade e o estado. Se as coordenadas forem NULAS, use "N/A - Coordenadas Ausentes".
+        - **Posição na Rua:** Estime se o problema está no INÍCIO, MEIO ou FINAL da via. Se as coordenadas forem NULAS, use "N/A".
 
         REGRAS DE FILTRAGEM DE SEGURANÇA (MUITO IMPORTANTES):
         1.  Se a imagem contiver nudez explícita, partes íntimas, ou conteúdo sexualmente sugestivo, você DEVE parar imediatamente a análise e definir "is_inappropriate" como true.
@@ -49,18 +55,22 @@ const analyzeProblemHandler = async (req, res) => {
 
         Se o conteúdo for APROPRIADO e for um PROBLEMA URBANO:
         1.  Defina "is_inappropriate" como false.
-        2.  **Identificação:** Identifique o problema principal (ex: "Buraco na pavimentação", "Poste de luz queimado", "Lixo acumulado").
-        3.  **Geração de Texto Formal:** Gere uma descrição detalhada e formal (em Português do Brasil) em formato de corpo de e-mail. Use um tom respeitoso e solicite uma providência.
-        4.  **Localização:** Inclua a seguinte informação de localização no início da descrição gerada: "${locationText}".
+        2.  **Identificação:** Identifique o problema principal (ex: "Buraco na pavimentação").
+        3.  **Geração de Texto Formal:** Gere uma descrição detalhada e formal (em Português do Brasil) em formato de corpo de e-mail.
+        4.  **Localização:** Inclua o endereço e a posição na rua (se disponível) no início da descrição gerada.
 
-        O Formato de Saída DEVE ser um único objeto JSON, contendo SEMPRE os três campos, mesmo em caso de erro de detecção ou filtragem:
+        O Formato de Saída DEVE ser um único objeto JSON, contendo SEMPRE os campos a seguir, MANTENDO A ESTRUTURA PARA O FRONTEND:
 
         {
           "is_inappropriate": true/false,
           "problem_type": "O problema identificado (uma frase curta)",
-          "formal_description": "O corpo completo da reclamação formal com a localização (ou uma mensagem de erro se imprópria)."
+          "formal_description": "O corpo completo da reclamação formal com o endereço e posição.",
+          "street_address": "Nome da Rua, Cidade/Estado (Ex: Rua das Flores, Rio de Janeiro/RJ)",
+          "street_position": "INÍCIO, MEIO, FINAL ou N/A"
         }
         `;
+        // --- FIM DO PROMPT ATUALIZADO ---
+
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
@@ -84,7 +94,7 @@ const analyzeProblemHandler = async (req, res) => {
 
     } catch (error) {
         console.error('Erro na análise da IA:', error);
-        return res.status(500).json({ error: 'Falha interna ao analisar a imagem. Verifique a chave da API.', is_inappropriate: false, problem_type: "Erro interno", formal_description: "Não foi possível gerar a descrição devido a uma falha no servidor." });
+        return res.status(500).json({ error: 'Falha interna ao analisar a imagem. Verifique a chave da API.', is_inappropriate: false, problem_type: "Erro interno", formal_description: "Não foi possível gerar a descrição devido a uma falha no servidor.", street_address: "N/A", street_position: "N/A" });
     }
 };
 
