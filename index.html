@@ -37,8 +37,7 @@
         /* Container Inicial Fixado no Topo */
         #initial-form-container {
             position: fixed;
-            /* PROPRIEDADE ALTERADA: Movido de 20px para 10px */
-            top: 10px; 
+            top: 10px; /* Ajustado para 10px */
             left: 50%;
             transform: translateX(-50%); 
             background-color: var(--form-background);
@@ -89,7 +88,7 @@
         h1 { color: #000000; text-align: center; margin-top: 0; margin-bottom: 2rem; font-weight: 700; }
         .form-group { margin-bottom: 19px; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
-        input[type="text"] {
+        input[type="text"], input[type="tel"] { /* Adicionado input[type="tel"] */
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
@@ -124,11 +123,16 @@
     <canvas id="canvas"></canvas>
 
     <div class="container" id="initial-form-container">
-        <h1>Registre um Problema e envie pra Prefeitura</h1>
+        <h1>Capture um Problema e envie pra Prefeitura</h1>
         <form id="initial-form">
             <div class="form-group">
-                <label for="nome">Seu Nome Completo:</label>
+                <label for="nome">Seu Nome Completo</label>
                 <input type="text" id="nome" name="nome" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="telefone">Telefone / WhatsApp</label>
+                <input type="tel" id="telefone" name="telefone" required>
             </div>
             
             <button type="button" class="submit-btn" id="start-camera-button">
@@ -152,7 +156,9 @@
             <input type="hidden" id="imagem_base64" name="imagem_base64">
             <input type="hidden" id="problema_identificado" name="problema_identificado">
             <input type="hidden" id="descricao_ai" name="descricao_ai">
+            
             <input type="hidden" id="nome_final" name="nome_final"> 
+            <input type="hidden" id="telefone_final" name="telefone_final"> 
 
             
             <button type="button" class="submit-btn" id="capture-restart-button" style="margin-top: 15px;">
@@ -161,7 +167,7 @@
             
             
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
-                <span>✅ Enviar para Prefeitura</span>
+                <span>✅ Enviar para Vereador</span>
             </button>
         </form>
         
@@ -183,6 +189,7 @@
         const initialForm = document.getElementById('initial-form');
         const startCameraButton = document.getElementById('start-camera-button');
         const nomeInput = document.getElementById('nome');
+        const telefoneInput = document.getElementById('telefone'); // NOVO: Campo Telefone
         
         // Elementos Etapa 2 (Captura)
         const captureUI = document.getElementById('capture-ui');
@@ -206,7 +213,7 @@
         const problemaInput = document.getElementById('problema_identificado');
         const descricaoAIInput = document.getElementById('descricao_ai');
         const nomeFinalInput = document.getElementById('nome_final');
-        // NOVOS INPUTS
+        const telefoneFinalInput = document.getElementById('telefone_final'); // NOVO: Campo Telefone Final
         const streetAddressInput = document.getElementById('street_address');
         const streetPositionInput = document.getElementById('street_position');
 
@@ -237,10 +244,11 @@
                 input.setSelectionRange(cursorPosition, cursorPosition);
             }
         }
+        // Aplica a sanitização APENAS ao campo nome, não ao telefone
         nomeInput.addEventListener('input', sanitizeInput);
         // --- FIM LÓGICA DE BLOQUEIO ---
 
-        // --- FUNÇÕES DE CÂMERA E GPS ---
+        // --- FUNÇÕES DE CÂMERA E GPS (sem alterações) ---
 
         async function startCameraStream() {
             try {
@@ -274,7 +282,7 @@
                     return resolve(null);
                 }
                 
-                statusText.textContent = 'Obtendo a localização via GPS...';
+                statusText.textContent = 'Tentando obter sua localização GPS...';
                 statusText.style.display = 'block';
                 
                 navigator.geolocation.getCurrentPosition(
@@ -297,13 +305,25 @@
 
         startCameraButton.addEventListener('click', async () => {
             const nomeSanitizado = nomeInput.value.replace(blockedWordsRegex, '').trim();
+            const telefone = telefoneInput.value.trim(); // NOVO: Obtém o telefone
+
             if (!nomeSanitizado) {
                  resultDiv.innerHTML = `❌ O campo Nome Completo é obrigatório.`;
                  resultDiv.style.display = 'block';
                  return;
             }
+            if (!telefone) { // NOVO: Validação do Telefone
+                 resultDiv.innerHTML = `❌ O campo Telefone/WhatsApp é obrigatório.`;
+                 resultDiv.style.display = 'block';
+                 return;
+            }
+            
             resultDiv.style.display = 'none'; 
             nomeInput.value = nomeSanitizado; 
+            
+            // NOVO: Transfere os dados limpos para os campos ocultos de destino
+            nomeFinalInput.value = nomeSanitizado;
+            telefoneFinalInput.value = telefone;
 
             try {
                 startCameraButton.disabled = true;
@@ -339,6 +359,10 @@
             captureUI.style.display = 'none';
             initialFormContainer.style.display = 'flex'; 
             
+            // Limpa campos ocultos da Etapa 2
+            nomeFinalInput.value = '';
+            telefoneFinalInput.value = '';
+
             submitButton.style.display = 'none';
             resetCaptureButton();
             previewImg.style.display = 'none';
@@ -396,8 +420,9 @@
             if (isAnalyzing) return;
             isAnalyzing = true;
             
-            if (!nomeInput.value.trim()) {
-                 statusText.innerHTML = `❌ Erro: Por favor, volte e preencha o nome.`;
+            // A validação de nome e telefone já foi feita na Etapa 1, apenas verificamos o preenchimento dos ocultos
+            if (!nomeFinalInput.value.trim() || !telefoneFinalInput.value.trim()) {
+                 statusText.innerHTML = `❌ Erro: Por favor, volte e preencha os campos obrigatórios.`;
                  statusText.style.display = 'block';
                  isAnalyzing = false;
                  return;
@@ -460,15 +485,15 @@
                 
                 const problemTypeClean = analysisResult.problem_type.toLowerCase();
                 if (problemTypeClean.includes("nenhum problema") || problemTypeClean.includes("n/a") || problemTypeClean.includes("não detectado")) {
-                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema cívico (buraco, lixo, poste, etc.).');
+                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema urbano (buraco na rua, poste sem luz, etc.).');
                 }
                 
                 // 4. Preencher campos ocultos e preparar para o envio
                 problemaInput.value = analysisResult.problem_type.replace(blockedWordsRegex, ''); 
                 descricaoAIInput.value = analysisResult.formal_description.replace(blockedWordsRegex, ''); 
                 imgBase64Input.value = capturedImageBase64; 
-                nomeFinalInput.value = nomeInput.value; 
-                // NOVOS CAMPOS:
+                
+                // Preenche os campos de endereço da IA
                 streetAddressInput.value = analysisResult.street_address || '';
                 streetPositionInput.value = analysisResult.street_position || '';
 
@@ -512,11 +537,11 @@
             
             const dataToSend = {
                 nome: nomeFinalInput.value, 
+                telefone: telefoneFinalInput.value, // NOVO: Enviando o Telefone
                 endereco: enderecoGPS, 
                 descricao: descricaoAIInput.value, 
                 imagem_base64: imgBase64Input.value, 
                 problema: problemaInput.value,
-                // NOVOS DADOS
                 street_address: streetAddressInput.value,
                 street_position: streetPositionInput.value
             };
@@ -558,7 +583,7 @@
                 statusText.innerHTML = `❌ Erro ao enviar: ${error.message}.`;
                 statusText.style.display = 'block';
                 submitButton.disabled = false;
-                submitButton.querySelector('span').textContent = '✅ Enviar para Vereador';
+                submitButton.querySelector('span').textContent = '✅ Enviar para Prefeitura';
             } finally {
                 // ...
             }
