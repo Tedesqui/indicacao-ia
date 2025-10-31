@@ -27,7 +27,8 @@
             padding: 2rem 1rem;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            /* MUDEI: O container vai para o final da tela */
+            align-items: flex-end;
             min-height: 100vh;
         }
         /* Configuração de Câmera e Canvas para cobrir a tela */
@@ -37,14 +38,17 @@
         canvas { display: none; }
 
         .container {
-            background-color: var(--form-background);
+            /* MUDEI: Torna o container semi-transparente e o move para baixo */
+            background-color: rgba(255, 255, 255, 0.95);
             padding: 2.5rem;
             border-radius: 12px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 650px;
             box-sizing: border-box;
-            transform: translateY(-70px); 
+            transform: none; /* Removida a translação */
+            margin-bottom: 20px;
+            z-index: 10; /* Garante que fique acima da câmera */
         }
         h1 {
             color: #000000;
@@ -234,16 +238,22 @@
                 if (!navigator.geolocation) {
                     return resolve(null);
                 }
-                statusText.textContent = 'Obtendo sua localização GPS...';
-                navigator.geolocation.getCurrentPosition(resolve, (error) => {
-                    if (error.code === error.PERMISSION_DENIED) {
-                        statusText.textContent = 'Acesso à localização negado. Continuaremos sem o GPS.';
-                        resolve(null); 
-                    } else {
-                        statusText.textContent = 'Erro ao obter localização.';
+                
+                // MENSAGEM DO GPS: Agora atualiza o status, mas NÃO bloqueia a UI
+                statusText.textContent = 'Tentando obter sua localização GPS...';
+                
+                // Define um timeout mais curto para não demorar
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        statusText.textContent = 'Localização GPS obtida com sucesso.';
+                        resolve(position);
+                    }, 
+                    (error) => {
+                        statusText.textContent = 'Acesso à localização negado ou falha no GPS. Usaremos apenas a foto.';
                         resolve(null); // Resolve como null para não quebrar o fluxo
-                    }
-                }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+                    }, 
+                    { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 } // Reduzindo o timeout para 3s
+                );
             });
         }
         
@@ -270,13 +280,16 @@
                 startAnalysisButton.disabled = true;
                 startAnalysisButton.querySelector('span').textContent = 'Preparando...';
                 
-                // 1. Obter Localização
-                const geoPosition = await getGeolocation();
-                if (geoPosition) {
-                    currentLatitude = geoPosition.coords.latitude;
-                    currentLongitude = geoPosition.coords.longitude;
-                    latInput.value = currentLatitude;
-                    lonInput.value = currentLongitude;
+                // 1. Obter Localização (Chama de novo se for nulo, mas com timeout curto)
+                // Se já houver um valor, ele não chama novamente.
+                if (currentLatitude === null) {
+                    const geoPosition = await getGeolocation();
+                    if (geoPosition) {
+                        currentLatitude = geoPosition.coords.latitude;
+                        currentLongitude = geoPosition.coords.longitude;
+                        latInput.value = currentLatitude;
+                        lonInput.value = currentLongitude;
+                    }
                 }
 
                 // 2. Capturar Imagem
@@ -330,7 +343,6 @@
                 }
                 
                 // 4. Preencher dados no formulário (oculto)
-                // A IA é instruída a ser limpa, mas garantimos a sanitização final por segurança
                 problemaInput.value = analysisResult.problem_type.replace(blockedWordsRegex, ''); 
                 descricaoAIInput.value = analysisResult.formal_description.replace(blockedWordsRegex, ''); 
                 imgBase64Input.value = capturedImageBase64; 
@@ -366,7 +378,7 @@
             submitButton.querySelector('span').textContent = 'Enviando e-mail...';
             resultDiv.style.display = 'none';
 
-            // Dados a serem enviados via JSON para a rota /api/send-email
+            // Dados a serem enviados
             const enderecoFormatado = currentLatitude && currentLongitude ? 
                 `Latitude: ${currentLatitude}, Longitude: ${currentLongitude}` : 
                 'Endereço não capturado via GPS.';
@@ -397,7 +409,7 @@
                 document.getElementById('success-message').textContent = "Indicação enviada com sucesso! O vereador receberá sua solicitação formatada pela IA.";
                 document.getElementById('success-modal').style.display = 'flex';
                 
-                // Limpa campos e reinicia a câmera
+                // Limpa campos e reinicia a interface
                 form.reset();
                 previewImg.style.display = 'none';
                 submitButton.style.display = 'none';
@@ -419,6 +431,7 @@
         });
 
         // --- 4. INICIALIZAÇÃO ---
+        // Inicia a câmera primeiro. Tenta obter o GPS em paralelo, sem bloqueio.
         startCamera().then(() => getGeolocation()); 
     </script>
 </body>
