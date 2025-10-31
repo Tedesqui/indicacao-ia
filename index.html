@@ -37,7 +37,8 @@
         /* Container Inicial Fixado no Topo */
         #initial-form-container {
             position: fixed;
-            top: 20px; 
+            /* PROPRIEDADE ALTERADA: Movido de 20px para 10px */
+            top: 10px; 
             left: 50%;
             transform: translateX(-50%); 
             background-color: var(--form-background);
@@ -123,10 +124,10 @@
     <canvas id="canvas"></canvas>
 
     <div class="container" id="initial-form-container">
-        <h1>Capture um Problema e envie pra Prefeitura</h1>
+        <h1>Registre um Problema e envie pra Prefeitura</h1>
         <form id="initial-form">
             <div class="form-group">
-                <label for="nome">Seu Nome Completo</label>
+                <label for="nome">Seu Nome Completo:</label>
                 <input type="text" id="nome" name="nome" required>
             </div>
             
@@ -160,7 +161,7 @@
             
             
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
-                <span>✅ Enviar para Vereador</span>
+                <span>✅ Enviar para Prefeitura</span>
             </button>
         </form>
         
@@ -273,7 +274,7 @@
                     return resolve(null);
                 }
                 
-                statusText.textContent = 'Tentando obter sua localização GPS...';
+                statusText.textContent = 'Obtendo a localização via GPS...';
                 statusText.style.display = 'block';
                 
                 navigator.geolocation.getCurrentPosition(
@@ -511,7 +512,6 @@
             
             const dataToSend = {
                 nome: nomeFinalInput.value, 
-                // O campo 'endereco' agora envia o GPS bruto, e o backend usará os novos campos
                 endereco: enderecoGPS, 
                 descricao: descricaoAIInput.value, 
                 imagem_base64: imgBase64Input.value, 
