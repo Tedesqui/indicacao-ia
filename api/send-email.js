@@ -1,16 +1,12 @@
 /*
  * Ficheiro: api/send-email.js
  * ROTA: /api/send-email (POST)
- * ATUALIZADO: Inclui street_address e street_position no e-mail.
+ * ATUALIZADO: Inclui Telefone/WhatsApp, street_address e street_position no e-mail.
  * SINTAXE: ES Module (import/export).
  */
 
 import express from 'express';
 import nodemailer from 'nodemailer';
-// Buffer é um módulo nativo do Node.js, e em ES Modules pode ser acessado globalmente ou importado
-// Não é estritamente necessário importar, mas é boa prática para clareza em alguns ambientes.
-// Usaremos a referência global Buffer.
-// import { Buffer } from 'buffer'; 
 
 const app = express();
 
@@ -27,9 +23,10 @@ const sendEmailHandler = (req, res) => {
         return res.status(405).json({ message: 'Method Not Allowed.' });
     }
 
-    // --- RECEBENDO OS NOVOS CAMPOS DO FRONTEND ---
+    // --- RECEBENDO TODOS OS CAMPOS DO FRONTEND ---
     const { 
         nome, 
+        telefone, // NOVO: Campo Telefone/WhatsApp
         endereco, // GPS Bruto
         descricao, 
         imagem_base64, 
@@ -47,7 +44,7 @@ const sendEmailHandler = (req, res) => {
         },
     });
 
-    // --- FORMATAÇÃO DO ENDEREÇO PARA O CORPO DO E-MAIL ---
+    // --- FORMATAÇÃO DO CORPO DO E-MAIL ---
     const enderecoEstimadoTexto = street_address && street_position ?
         `<b>${street_address}</b> (Posição: ${street_position})` :
         `Endereço Estimado Indisponível`;
@@ -65,6 +62,10 @@ const sendEmailHandler = (req, res) => {
             <h1>Nova Indicação Automatizada por IA</h1>
             <p><strong>Problema Identificado:</strong> ${problema || 'N/A'}</p>
             <hr>
+            <h2>👤 Contato do Cidadão</h2>
+            <p><strong>Nome:</strong> ${nome}</p>
+            <p><strong>Telefone/WhatsApp:</strong> <a href="https://wa.me/55${telefone}">${telefone}</a></p>
+            <hr>
             <h2>📍 Detalhes da Localização</h2>
             <p style="margin-bottom: 5px;"><strong>Endereço Estimado (IA):</strong> ${enderecoEstimadoTexto}</p>
             <p style="font-size: 0.9em; color: #555;">${coordenadasTexto}</p>
@@ -73,7 +74,6 @@ const sendEmailHandler = (req, res) => {
             <div style="border: 1px solid #ccc; padding: 15px; background: #f9f9f9; line-height: 1.5;">
                 ${descricao.replace(/\n/g, '<br>')}
             </div>
-            <p style="margin-top: 15px;"><strong>Enviado por:</strong> ${nome}</p>
             <hr>
             <p>${imagem_base64 ? 'Uma imagem foi anexada para referência.' : 'Nenhuma imagem enviada.'}</p>
         `,
@@ -84,7 +84,6 @@ const sendEmailHandler = (req, res) => {
     if (imagem_base64) {
         // Remove o prefixo 'data:image/jpeg;base64,'
         const base64Data = imagem_base64.replace(/^data:image\/\w+;base64,/, "");
-        // Buffer é global em Node.js ES Modules.
         const imageBuffer = Buffer.from(base64Data, 'base64');
         
         mailOptions.attachments.push({
