@@ -1,7 +1,6 @@
 /*
  * Ficheiro: api/index.js (ou o nome do seu arquivo de servidor principal)
- * CONTÉM: ROTA DA IA (/api/analyze-problem) E ROTA DE ENVIO (/api/send-email)
- * ATUALIZADO: Inclui filtragem de segurança na análise da IA.
+ * ATUALIZADO: Limite do body JSON aumentado para 50mb.
  */
 
 const express = require('express');
@@ -12,13 +11,12 @@ const OpenAI = require('openai');
 const app = express();
 app.use(cors());
 
-// Habilita o Express para ler corpos JSON (essencial para a Base64)
-// Aumentamos o limite para suportar a imagem base64 (até 10MB)
-app.use(express.json({ limit: '10mb' })); 
+// --- CORREÇÃO APLICADA: LIMITE DO BODY AUMENTADO PARA 50MB ---
+app.use(express.json({ limit: '50mb' })); 
+// -----------------------------------------------------------
 
 
 // Configuração da OpenAI
-// ATENÇÃO: A variável OPENAI_API_KEY deve ser configurada no ambiente.
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
@@ -83,7 +81,7 @@ app.post('/api/analyze-problem', async (req, res) => {
 
     } catch (error) {
         console.error('Erro na análise da IA:', error);
-        // Em caso de falha completa da API, retorna um erro genérico
+        // Retorna JSON mesmo em caso de falha do servidor para evitar erro de token 'T'
         return res.status(500).json({ error: 'Falha interna ao analisar a imagem. Verifique a chave da API.', is_inappropriate: false, problem_type: "Erro interno", formal_description: "Não foi possível gerar a descrição devido a uma falha no servidor." });
     }
 });
