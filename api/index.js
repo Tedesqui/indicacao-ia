@@ -1,6 +1,7 @@
 /*
  * Ficheiro: api/index.js (ou o nome do seu arquivo de servidor principal)
- * ATUALIZADO: Limite do body JSON aumentado para 50mb.
+ * CONTÉM: ROTA DA IA (/api/analyze-problem) E ROTA DE ENVIO (/api/send-email)
+ * ATUALIZADO: Inclui manipulador GET para evitar erro 404 no log.
  */
 
 const express = require('express');
@@ -11,19 +12,26 @@ const OpenAI = require('openai');
 const app = express();
 app.use(cors());
 
-// --- CORREÇÃO APLICADA: LIMITE DO BODY AUMENTADO PARA 50MB ---
+// Aumenta o limite do body JSON para suportar a imagem base64
 app.use(express.json({ limit: '50mb' })); 
-// -----------------------------------------------------------
 
 
 // Configuração da OpenAI
 const openai = new OpenAI({
+    // ATENÇÃO: A variável OPENAI_API_KEY deve ser configurada no ambiente.
     apiKey: process.env.OPENAI_API_KEY,
 });
 
 // ----------------------------------------------------------------------
 // ROTA 1: IDENTIFICAÇÃO E GERAÇÃO DE TEXTO POR IA (/api/analyze-problem)
 // ----------------------------------------------------------------------
+
+// Adiciona um manipulador GET para evitar o erro 404 no log
+app.get('/api/analyze-problem', (req, res) => {
+    res.status(405).json({ message: 'Method Not Allowed. Esta rota só aceita requisições POST com dados de imagem.' });
+});
+
+// Manipulador POST (A rota de análise real)
 app.post('/api/analyze-problem', async (req, res) => {
     try {
         const { image, latitude, longitude } = req.body;
@@ -99,6 +107,7 @@ app.post('/api/send-email', (req, res) => {
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
+            // ATENÇÃO: Estas variáveis devem estar configuradas no ambiente.
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         },
