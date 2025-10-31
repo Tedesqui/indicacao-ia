@@ -37,7 +37,7 @@
         /* Container Inicial Fixado no Topo */
         #initial-form-container {
             position: fixed;
-            top: 10px; /* Ajustado para 10px */
+            top: 10px; 
             left: 50%;
             transform: translateX(-50%); 
             background-color: var(--form-background);
@@ -88,7 +88,7 @@
         h1 { color: #000000; text-align: center; margin-top: 0; margin-bottom: 2rem; font-weight: 700; }
         .form-group { margin-bottom: 19px; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
-        input[type="text"], input[type="tel"] { /* Adicionado input[type="tel"] */
+        input[type="text"], input[type="tel"] {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
@@ -132,7 +132,7 @@
             
             <div class="form-group">
                 <label for="telefone">Telefone / WhatsApp</label>
-                <input type="tel" id="telefone" name="telefone" required>
+                <input type="tel" id="telefone" name="telefone" required placeholder="(XX) XXXXX-XXXX">
             </div>
             
             <button type="button" class="submit-btn" id="start-camera-button">
@@ -189,7 +189,7 @@
         const initialForm = document.getElementById('initial-form');
         const startCameraButton = document.getElementById('start-camera-button');
         const nomeInput = document.getElementById('nome');
-        const telefoneInput = document.getElementById('telefone'); // NOVO: Campo Telefone
+        const telefoneInput = document.getElementById('telefone'); 
         
         // Elementos Etapa 2 (Captura)
         const captureUI = document.getElementById('capture-ui');
@@ -213,7 +213,7 @@
         const problemaInput = document.getElementById('problema_identificado');
         const descricaoAIInput = document.getElementById('descricao_ai');
         const nomeFinalInput = document.getElementById('nome_final');
-        const telefoneFinalInput = document.getElementById('telefone_final'); // NOVO: Campo Telefone Final
+        const telefoneFinalInput = document.getElementById('telefone_final'); 
         const streetAddressInput = document.getElementById('street_address');
         const streetPositionInput = document.getElementById('street_position');
 
@@ -244,7 +244,6 @@
                 input.setSelectionRange(cursorPosition, cursorPosition);
             }
         }
-        // Aplica a sanitização APENAS ao campo nome, não ao telefone
         nomeInput.addEventListener('input', sanitizeInput);
         // --- FIM LÓGICA DE BLOQUEIO ---
 
@@ -282,7 +281,7 @@
                     return resolve(null);
                 }
                 
-                statusText.textContent = 'Tentando obter a localização pelo GPS...';
+                statusText.textContent = 'Tentando obter sua localização GPS...';
                 statusText.style.display = 'block';
                 
                 navigator.geolocation.getCurrentPosition(
@@ -305,23 +304,25 @@
 
         startCameraButton.addEventListener('click', async () => {
             const nomeSanitizado = nomeInput.value.replace(blockedWordsRegex, '').trim();
-            const telefone = telefoneInput.value.trim(); // NOVO: Obtém o telefone
+            const telefone = telefoneInput.value.trim().replace(/\D/g, ''); // Remove caracteres não numéricos
 
-            if (!nomeSanitizado) {
-                 resultDiv.innerHTML = `❌ O campo Nome Completo é obrigatório.`;
+            // --- VALIDAÇÃO REFORÇADA ---
+            if (nomeSanitizado.length < 4) {
+                 resultDiv.innerHTML = `❌ O campo Nome Completo deve ter no mínimo 4 letras.`;
                  resultDiv.style.display = 'block';
                  return;
             }
-            if (!telefone) { // NOVO: Validação do Telefone
-                 resultDiv.innerHTML = `❌ O campo Telefone/WhatsApp é obrigatório.`;
+            if (telefone.length < 8) { 
+                 resultDiv.innerHTML = `❌ O campo Telefone/WhatsApp deve ter no mínimo 8 dígitos.`;
                  resultDiv.style.display = 'block';
                  return;
             }
-            
+            // --- FIM VALIDAÇÃO REFORÇADA ---
+
             resultDiv.style.display = 'none'; 
             nomeInput.value = nomeSanitizado; 
             
-            // NOVO: Transfere os dados limpos para os campos ocultos de destino
+            // Transfere os dados limpos e validados para os campos ocultos de destino
             nomeFinalInput.value = nomeSanitizado;
             telefoneFinalInput.value = telefone;
 
@@ -420,7 +421,7 @@
             if (isAnalyzing) return;
             isAnalyzing = true;
             
-            // A validação de nome e telefone já foi feita na Etapa 1, apenas verificamos o preenchimento dos ocultos
+            // A validação completa já foi feita na Etapa 1
             if (!nomeFinalInput.value.trim() || !telefoneFinalInput.value.trim()) {
                  statusText.innerHTML = `❌ Erro: Por favor, volte e preencha os campos obrigatórios.`;
                  statusText.style.display = 'block';
@@ -485,7 +486,7 @@
                 
                 const problemTypeClean = analysisResult.problem_type.toLowerCase();
                 if (problemTypeClean.includes("nenhum problema") || problemTypeClean.includes("n/a") || problemTypeClean.includes("não detectado")) {
-                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema urbano (buraco na rua, poste sem luz, etc.).');
+                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema cívico (buraco, lixo, poste, etc.).');
                 }
                 
                 // 4. Preencher campos ocultos e preparar para o envio
@@ -537,7 +538,7 @@
             
             const dataToSend = {
                 nome: nomeFinalInput.value, 
-                telefone: telefoneFinalInput.value, // NOVO: Enviando o Telefone
+                telefone: telefoneFinalInput.value, 
                 endereco: enderecoGPS, 
                 descricao: descricaoAIInput.value, 
                 imagem_base64: imgBase64Input.value, 
@@ -583,7 +584,7 @@
                 statusText.innerHTML = `❌ Erro ao enviar: ${error.message}.`;
                 statusText.style.display = 'block';
                 submitButton.disabled = false;
-                submitButton.querySelector('span').textContent = '✅ Enviar para Prefeitura';
+                submitButton.querySelector('span').textContent = '✅ Enviar para Vereador';
             } finally {
                 // ...
             }
@@ -596,4 +597,3 @@
     </script>
 </body>
 </html>
-
