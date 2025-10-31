@@ -24,30 +24,38 @@
             background-color: var(--background-color);
             color: var(--text-color);
             margin: 0;
-            padding: 0; /* Removido padding extra para melhor controle do layout */
-            display: flex;
-            justify-content: center;
-            align-items: center; /* Centraliza a Etapa 1 */
+            padding: 0;
+            /* Deixa o body simples, o posicionamento será feito nos containers */
             min-height: 100vh;
         }
-        /* Configuração de Câmera e Canvas para cobrir a tela */
+        /* Configuração de Câmera e Canvas */
         video, canvas {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1;
-            display: none; /* A câmera começa oculta */
+            display: none; 
         }
 
-        .container {
+        /* ESTILO CORRIGIDO: Container Inicial Fixado no Topo */
+        #initial-form-container {
+            /* Fixa no topo e centraliza horizontalmente */
+            position: fixed;
+            top: 20px; /* Distância do topo */
+            left: 50%;
+            transform: translateX(-50%); /* Centralização horizontal */
+            
             background-color: var(--form-background);
             padding: 2.5rem;
             border-radius: 12px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            width: 100%;
+            width: 90%;
             max-width: 650px;
             box-sizing: border-box;
             z-index: 10;
+            /* Inicia visível */
+            display: flex; 
+            flex-direction: column; /* Necessário para alinhar o conteúdo */
         }
         
-        /* NOVO ESTILO: Container de controle que aparecerá DURANTE a captura */
+        /* Container de controle que aparecerá DURANTE a captura */
         #capture-ui {
             position: fixed;
             bottom: 0;
@@ -57,27 +65,15 @@
             background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.8), rgba(0,0,0,0.6));
             color: white;
             text-align: center;
-            z-index: 5; /* Fica acima da câmera */
+            z-index: 5; 
             box-sizing: border-box;
-            display: none; /* Começa oculto */
+            display: none; 
         }
-        #capture-ui h1 {
-            color: white;
-            margin-bottom: 1rem;
-        }
-        #capture-ui #status-text {
-            color: #ccc;
-            margin-bottom: 10px;
-        }
-
-        /* Estilos do Formulário (Etapa 1) e Botões */
-        h1 {
-            color: #000000;
-            text-align: center;
-            margin-top: 0;
-            margin-bottom: calc(2rem - 10px);
-            font-weight: 700;
-        }
+        
+        /* Estilos do Formulário (Mantidos) */
+        h1 { color: #000000; text-align: center; margin-top: 0; margin-bottom: 2rem; font-weight: 700; }
+        #capture-ui h1 { color: white; margin-bottom: 1rem; }
+        #capture-ui #status-text { color: #ccc; margin-bottom: 10px; }
         .form-group { margin-bottom: 19px; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
         input[type="text"] {
@@ -91,14 +87,14 @@
         }
         .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
 
-        /* Estilos de mensagens de erro e modal (mantidos) */
+        /* Estilos de mensagens de erro e modal */
         #form-result { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; text-align: center; font-weight: 500; display: none; }
         #form-result.error { background-color: #fdecea; color: var(--error-color); display: block; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background-color: var(--form-background); padding: 2.5rem 3.5rem; border-radius: 12px; text-align: center; }
         .modal-content p { margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--success-color); }
 
-        /* Preview na Etapa 2 (Aparece após a captura) */
+        /* Preview na Etapa 2 */
         #preview-img {
             max-width: 90%; max-height: 150px; border-radius: 8px; margin-bottom: 10px;
             border: 2px solid white; display: none; margin-left: auto; margin-right: auto;
@@ -125,6 +121,7 @@
     </div>
     
     <div id="capture-ui">
+        
         <img id="preview-img" alt="Pré-visualização do problema" />
 
         <div id="status-text">Aguardando...</div>
@@ -135,7 +132,9 @@
             <input type="hidden" id="imagem_base64" name="imagem_base64">
             <input type="hidden" id="problema_identificado" name="problema_identificado">
             <input type="hidden" id="descricao_ai" name="descricao_ai">
-            <input type="hidden" id="nome_final" name="nome_final"> <button type="button" class="submit-btn" id="start-analysis-button" style="margin-top: 15px;">
+            <input type="hidden" id="nome_final" name="nome_final"> 
+
+            <button type="button" class="submit-btn" id="start-analysis-button" style="margin-top: 15px;">
                 <span>📸 Capturar Imagem e Analisar Problema</span>
             </button>
             
@@ -220,7 +219,6 @@
                 .then(stream => {
                     video.srcObject = stream;
                     video.style.display = 'block';
-                    // statusText.textContent será definido no handler
                 })
                 .catch(err => {
                     statusText.textContent = 'Erro ao acessar a câmera. Verifique as permissões.';
@@ -240,7 +238,6 @@
         function getGeolocation() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
-                    statusText.textContent = 'Geolocalização não suportada. Usando apenas a foto.';
                     return resolve(null);
                 }
                 
@@ -279,7 +276,7 @@
                 initialFormContainer.style.display = 'none';
                 captureUI.style.display = 'block';
                 
-                // 2. Inicia a câmera e o GPS em paralelo
+                // 2. Inicia a câmera
                 await startCameraStream(); 
                 
                 // Tenta obter o GPS (Não bloqueia o stream da câmera)
@@ -292,7 +289,8 @@
                 statusText.textContent = 'Câmera pronta. Clique no botão para Capturar e Analisar.';
 
             } catch (error) {
-                initialFormContainer.style.display = 'block'; // Volta para o formulário
+                // Em caso de falha, exibe o erro e mantém o formulário inicial
+                initialFormContainer.style.display = 'flex'; 
                 captureUI.style.display = 'none';
                 resultDiv.innerHTML = `❌ Erro na Câmera: ${error.message}.`;
                 resultDiv.style.display = 'block';
@@ -319,13 +317,18 @@
             if (isAnalyzing) return;
             isAnalyzing = true;
             
-            resultDiv.style.display = 'none'; 
-
+            // Revalida o nome (já limpo na Etapa 1)
+            if (!nomeInput.value.trim()) {
+                 statusText.innerHTML = `❌ Erro: Por favor, volte e preencha o nome.`;
+                 isAnalyzing = false;
+                 return;
+            }
+            
             try {
                 startAnalysisButton.disabled = true;
                 startAnalysisButton.querySelector('span').textContent = 'Preparando...';
                 
-                // Capturar Imagem
+                // 1. Capturar Imagem
                 statusText.textContent = 'Capturando imagem...';
                 const MAX_WIDTH = 1024;
                 const scale = MAX_WIDTH / video.videoWidth;
@@ -340,11 +343,7 @@
                 previewImg.src = capturedImageBase64;
                 previewImg.style.display = 'block';
                 
-                // 3. Chamar a API de IA para Análise
-                statusText.textContent = 'Analisando imagem e gerando texto...';
-                startAnalysisButton.querySelector('span').textContent = 'Analisando com IA...';
-                
-                // Tenta obter o GPS uma última vez caso tenha falhado na inicialização
+                // 2. Tenta obter o GPS uma última vez
                 if (currentLatitude === null) {
                     const geoPosition = await getGeolocation();
                     if (geoPosition) {
@@ -353,6 +352,10 @@
                     }
                 }
 
+                // 3. Chamar a API de IA para Análise
+                statusText.textContent = 'Analisando imagem e gerando texto...';
+                startAnalysisButton.querySelector('span').textContent = 'Analisando com IA...';
+                
                 const analysisResponse = await fetch('/api/analyze-problem', { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -393,13 +396,13 @@
                 submitButton.style.display = 'block';
 
             } catch (error) {
-                // Em caso de erro na análise, mostre o botão de análise novamente
+                // Em caso de erro na análise, mostre o erro e o botão de análise novamente
                 statusText.innerHTML = `❌ Erro na análise: ${error.message}. Tente novamente.`;
                 startAnalysisButton.style.display = 'block';
                 submitButton.style.display = 'none';
                 
-                // Se falhou na análise, reinicia a câmera para o usuário tentar de novo
-                startCameraStream();
+                // Exibe a prévia da foto tirada para reanálise
+                previewImg.style.display = 'block';
                 
             } finally {
                 isAnalyzing = false;
@@ -417,9 +420,6 @@
             submitButton.disabled = true;
             submitButton.querySelector('span').textContent = 'Enviando e-mail...';
             
-            // Revalidação final (nome já limpo na Etapa 1)
-            if (!nomeFinalInput.value) return; 
-
             // Dados a serem enviados
             const enderecoFormatado = currentLatitude && currentLongitude ? 
                 `Latitude: ${currentLatitude}, Longitude: ${currentLongitude}` : 
@@ -467,9 +467,7 @@
 
             } catch (error) {
                 statusText.innerHTML = `❌ Erro ao enviar: ${error.message}.`;
-                startAnalysisButton.style.display = 'block';
-                submitButton.style.display = 'none';
-                startCameraStream(); // Mantém a câmera ligada após erro de envio
+                // Não reinicia a câmera, pois a foto (preview) e análise permanecem.
             } finally {
                 submitButton.disabled = false;
                 submitButton.querySelector('span').textContent = '✅ Enviar para Vereador';
