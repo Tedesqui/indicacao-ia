@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mande o seu Pedido - Captura Automatizada por IA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007BFF;
+            --primary-hover: #0056b3;
+            --background-color: #f4f7f9;
+            --form-background: #ffffff;
+            --text-color: #333;
+            --label-color: #555;
+            --border-color: #ccc;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        /* Configuração de Câmera e Canvas para cobrir a tela */
+        video, canvas {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1;
+        }
+        canvas { display: none; }
+
+        .container {
+            background-color: var(--form-background);
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 650px;
+            box-sizing: border-box;
+            transform: translateY(-70px); 
+        }
+        h1 {
+            color: #000000;
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: calc(2rem - 10px);
+            font-weight: 700;
+        }
+        .form-group {
+            margin-bottom: 19px;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--label-color);
+        }
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        .submit-btn {
+            background: linear-gradient(45deg, #007BFF, #0056b3);
+            color: white;
+            padding: 1rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .submit-btn:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+        #form-result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+        }
+        #form-result.error {
+            background-color: #fdecea;
+            color: var(--error-color);
+            display: block;
+        }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background-color: var(--form-background); padding: 2.5rem 3.5rem;
+            border-radius: 12px; text-align: center;
+        }
+        .modal-content p {
+            margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--success-color);
+        }
+        /* Estilos para a área de status e preview */
+        #capture-area {
+            text-align: center;
+        }
+        #preview-img {
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+
+    <div class="container" id="camera-container">
+        <h1>Capture o Problema</h1>
+        
+        <div id="capture-area">
+            <div id="status-text" style="font-size: 1.1rem; margin-bottom: 20px; font-weight: 600; color: var(--primary-color);">
+                Aguardando acesso à câmera e localização...
+            </div>
+            <img id="preview-img" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 20px; display: none;" />
+        </div>
+
+        <form id="indication-form">
+            <div class="form-group">
+                <label for="nome">Seu Nome Completo</label>
+                <input type="text" id="nome" name="nome" required>
+            </div>
+            
+            <input type="hidden" id="latitude" name="latitude">
+            <input type="hidden" id="longitude" name="longitude">
+            <input type="hidden" id="imagem_base64" name="imagem_base64">
+            <input type="hidden" id="problema_identificado" name="problema_identificado">
+            <input type="hidden" id="descricao_ai" name="descricao_ai">
+            
+            <button type="button" class="submit-btn" id="start-analysis-button">
+                <span>📸 Iniciar Captura e Análise</span>
+            </button>
+            
+            <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
+                <span>✅ Enviar para Vereador</span>
+            </button>
+        </form>
+        
+        <div id="form-result"></div>
+    </div>
+    <div id="success-modal" class="modal-overlay">
+        <div class="modal-content">
+            <p id="success-message"></p>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('indication-form');
+        const resultDiv = document.getElementById('form-result');
+        const startAnalysisButton = document.getElementById('start-analysis-button');
+        const submitButton = document.getElementById('submit-button');
+        const statusText = document.getElementById('status-text');
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const previewImg = document.getElementById("preview-img");
+        
+        // Campos de Input
+        const nomeInput = document.getElementById('nome');
+        const latInput = document.getElementById('latitude');
+        const lonInput = document.getElementById('longitude');
+        const imgBase64Input = document.getElementById('imagem_base64');
+        const problemaInput = document.getElementById('problema_identificado');
+        const descricaoAIInput = document.getElementById('descricao_ai');
+
+        let isAnalyzing = false;
+        let capturedImageBase64 = null;
+        let currentLatitude = null;
+        let currentLongitude = null;
+
+        // --- LÓGICA DE BLOQUEIO DE PALAVRAS ---
+        const blockedWords = [
+            'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido', 
+            'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar', 
+            'mãe', 'denúncia', 'denuncia', 'caralho', 'ladrão', 'corrupto', 
+            'idiota', 'imbecil', 'vtmnc', 'ladrões', 'corrupto', 'ladrao', 'ladrão','foder', 'fuder','vsf','vtmnc','merda','puta','bosta','foda','porra','viado','veado','buceta','cacete','idiota','imbecil','chupa','chupar','pica','piru','pika','anus'
+        ];
+        const blockedWordsRegex = new RegExp(`\\b(${blockedWords.join('|')})\\b`, 'gi');
+
+        function sanitizeInput(event) {
+            const input = event.target;
+            const originalValue = input.value;
+            const sanitizedValue = originalValue.replace(blockedWordsRegex, ''); 
+
+            if (originalValue !== sanitizedValue) {
+                const cursorPosition = input.selectionStart - (originalValue.length - sanitizedValue.length);
+                input.value = sanitizedValue;
+                input.setSelectionRange(cursorPosition, cursorPosition);
+            }
+        }
+        
+        // Aplica a sanitização ao campo NOME
+        nomeInput.addEventListener('input', sanitizeInput);
+        // --- FIM LÓGICA DE BLOQUEIO ---
+
+        // --- 1. FUNÇÕES DE CÂMERA E GPS ---
+
+        function startCamera() {
+            return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.style.display = 'block';
+                    statusText.textContent = 'Câmera pronta. Clique para capturar a imagem.';
+                })
+                .catch(err => {
+                    statusText.textContent = 'Erro ao acessar a câmera. Tente novamente.';
+                    console.error("Erro na Câmera:", err);
+                    throw err;
+                });
+        }
+
+        function getGeolocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    return resolve(null);
+                }
+                statusText.textContent = 'Obtendo sua localização GPS...';
+                navigator.geolocation.getCurrentPosition(resolve, (error) => {
+                    if (error.code === error.PERMISSION_DENIED) {
+                        statusText.textContent = 'Acesso à localização negado. Continuaremos sem o GPS.';
+                        resolve(null); 
+                    } else {
+                        statusText.textContent = 'Erro ao obter localização.';
+                        resolve(null); // Resolve como null para não quebrar o fluxo
+                    }
+                }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+            });
+        }
+        
+        // --- 2. INÍCIO DA CAPTURA (Botão 'Iniciar Captura e Análise') ---
+
+        startAnalysisButton.addEventListener('click', async () => {
+            if (isAnalyzing) return;
+            isAnalyzing = true;
+            
+            // Revalidação do nome
+            const nomeSanitizado = nomeInput.value.replace(blockedWordsRegex, '').trim();
+            if (!nomeSanitizado) {
+                 resultDiv.innerHTML = `❌ O campo Nome é obrigatório e não pode conter palavras inadequadas.`;
+                 resultDiv.style.display = 'block';
+                 resultDiv.classList.add('error');
+                 isAnalyzing = false;
+                 return;
+            }
+            nomeInput.value = nomeSanitizado; // Atualiza o campo com o nome limpo
+            
+            resultDiv.style.display = 'none'; // Limpa mensagens de erro anteriores
+
+            try {
+                startAnalysisButton.disabled = true;
+                startAnalysisButton.querySelector('span').textContent = 'Preparando...';
+                
+                // 1. Obter Localização
+                const geoPosition = await getGeolocation();
+                if (geoPosition) {
+                    currentLatitude = geoPosition.coords.latitude;
+                    currentLongitude = geoPosition.coords.longitude;
+                    latInput.value = currentLatitude;
+                    lonInput.value = currentLongitude;
+                }
+
+                // 2. Capturar Imagem
+                statusText.textContent = 'Capturando imagem...';
+                const MAX_WIDTH = 1024;
+                const scale = MAX_WIDTH / video.videoWidth;
+                canvas.width = MAX_WIDTH;
+                canvas.height = video.videoHeight * scale;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+                // Parar a câmera e exibir a pré-visualização
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                    video.style.display = 'none';
+                }
+                previewImg.src = capturedImageBase64;
+                previewImg.style.display = 'block';
+
+                // 3. Chamar a API de IA para Análise
+                statusText.textContent = 'Analisando imagem e gerando texto...';
+                startAnalysisButton.querySelector('span').textContent = 'Analisando com IA...';
+                
+                const analysisResponse = await fetch('/api/analyze-problem', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        image: capturedImageBase64, 
+                        latitude: currentLatitude, 
+                        longitude: currentLongitude 
+                    }),
+                });
+                
+                const analysisResult = await analysisResponse.json();
+
+                if (!analysisResponse.ok || analysisResult.error) {
+                    throw new Error(analysisResult.error || 'Falha na análise da IA.');
+                }
+                
+                // --- VERIFICAÇÃO DE SEGURANÇA E CONTEÚDO ---
+                
+                // A. Conteúdo Impróprio
+                if (analysisResult.is_inappropriate === true) {
+                    throw new Error('Conteúdo da imagem sinalizado como impróprio. O envio foi bloqueado para moderação.');
+                }
+                
+                // B. Problema Não Detectado (Verifica a string retornada pela IA)
+                const problemTypeClean = analysisResult.problem_type.toLowerCase();
+                if (problemTypeClean.includes("nenhum problema") || problemTypeClean.includes("n/a") || problemTypeClean.includes("não detectado")) {
+                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema cívico (buraco, lixo, poste, etc.).');
+                }
+                
+                // 4. Preencher dados no formulário (oculto)
+                // A IA é instruída a ser limpa, mas garantimos a sanitização final por segurança
+                problemaInput.value = analysisResult.problem_type.replace(blockedWordsRegex, ''); 
+                descricaoAIInput.value = analysisResult.formal_description.replace(blockedWordsRegex, ''); 
+                imgBase64Input.value = capturedImageBase64; 
+
+                // 5. Mudar a interface para o modo de Revisão/Envio
+                const locationStatus = currentLatitude ? `Localização capturada.` : `Localização NÃO capturada.`;
+                statusText.innerHTML = `✅ **Problema:** ${problemaInput.value}. ${locationStatus} O texto para o vereador foi gerado. Clique em 'Enviar para Vereador'.`;
+                startAnalysisButton.style.display = 'none';
+                submitButton.style.display = 'block';
+
+            } catch (error) {
+                statusText.innerHTML = `❌ Erro na análise: ${error.message}. Tente novamente.`;
+                console.error('Erro na Análise:', error);
+                
+            } finally {
+                isAnalyzing = false;
+                startAnalysisButton.disabled = false;
+                startAnalysisButton.querySelector('span').textContent = '📸 Iniciar Captura e Análise';
+                // Reinicia a câmera para uma nova tentativa se o envio não tiver aparecido
+                if(submitButton.style.display === 'none') {
+                    startCamera(); 
+                }
+            }
+        });
+
+
+        // --- 3. SUBMISSÃO FINAL DO FORMULÁRIO (Para 'send-email') ---
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            submitButton.disabled = true;
+            submitButton.querySelector('span').textContent = 'Enviando e-mail...';
+            resultDiv.style.display = 'none';
+
+            // Dados a serem enviados via JSON para a rota /api/send-email
+            const enderecoFormatado = currentLatitude && currentLongitude ? 
+                `Latitude: ${currentLatitude}, Longitude: ${currentLongitude}` : 
+                'Endereço não capturado via GPS.';
+            
+            const dataToSend = {
+                nome: nomeInput.value, 
+                endereco: enderecoFormatado, 
+                descricao: descricaoAIInput.value, 
+                imagem_base64: imgBase64Input.value, 
+                problema: problemaInput.value 
+            };
+
+            const backendUrl = '/api/send-email'; 
+
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToSend),
+                });
+                
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || 'Ocorreu um erro no servidor.');
+                }
+
+                document.getElementById('success-message').textContent = "Indicação enviada com sucesso! O vereador receberá sua solicitação formatada pela IA.";
+                document.getElementById('success-modal').style.display = 'flex';
+                
+                // Limpa campos e reinicia a câmera
+                form.reset();
+                previewImg.style.display = 'none';
+                submitButton.style.display = 'none';
+                startAnalysisButton.style.display = 'block';
+                startCamera();
+
+                setTimeout(() => {
+                    document.getElementById('success-modal').style.display = 'none';
+                }, 8000);
+
+            } catch (error) {
+                resultDiv.innerHTML = `Ops! Algo deu errado ao enviar: ${error.message}`;
+                resultDiv.style.display = 'block';
+                resultDiv.classList.add('error');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.querySelector('span').textContent = '✅ Enviar para Vereador';
+            }
+        });
+
+        // --- 4. INICIALIZAÇÃO ---
+        startCamera().then(() => getGeolocation()); 
+    </script>
+</body>
+</html>
