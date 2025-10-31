@@ -1,11 +1,13 @@
 /*
  * Ficheiro: api/analyze-problem.js
  * ROTA: /api/analyze-problem (POST)
+ * CORREÇÃO: Migrado de require para import.
  */
 
-const express = require('express');
-const OpenAI = require('openai');
-// Importante: Em ambientes Vercel/Next.js, é melhor configurar o app para cada handler
+import express from 'express';
+import OpenAI from 'openai';
+
+// Importante: Express deve ser configurado para cada handler em ambientes Serverless
 const app = express();
 
 // Aumenta o limite do body JSON para suportar a imagem base64
@@ -18,17 +20,16 @@ const openai = new OpenAI({
 
 // Manipulador POST para análise de imagem
 const analyzeProblemHandler = async (req, res) => {
+    // Adiciona um manipulador GET (opcional, mas evita 404 no log)
+    if (req.method === 'GET') {
+         return res.status(405).json({ message: 'Method Not Allowed. Use POST para análise.' });
+    }
+    
+    if (req.method !== 'POST') {
+         return res.status(405).json({ message: 'Method Not Allowed.' });
+    }
+    
     try {
-        // Manipulador GET (opcional, mas evita 404 no log)
-        if (req.method === 'GET') {
-             return res.status(405).json({ message: 'Method Not Allowed. Use POST para análise.' });
-        }
-        
-        if (req.method !== 'POST') {
-             return res.status(405).json({ message: 'Method Not Allowed.' });
-        }
-        
-        // --- Lógica de Análise (Copiada do código anterior) ---
         const { image, latitude, longitude } = req.body;
 
         if (!image) {
@@ -87,8 +88,5 @@ const analyzeProblemHandler = async (req, res) => {
     }
 };
 
-// Exporta o Express App com o manipulador POST
-app.post('/', analyzeProblemHandler);
-app.get('/', analyzeProblemHandler); // Adiciona GET para evitar o 404 no log
-
-module.exports = app;
+// Exporta o manipulador para o ambiente Serverless
+export default analyzeProblemHandler;
