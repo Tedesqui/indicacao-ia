@@ -24,32 +24,53 @@
             background-color: var(--background-color);
             color: var(--text-color);
             margin: 0;
-            padding: 2rem 1rem;
+            padding: 0; /* Removido padding extra para melhor controle do layout */
             display: flex;
             justify-content: center;
-            /* MUDEI: O container vai para o final da tela */
-            align-items: flex-end;
+            align-items: center; /* Centraliza a Etapa 1 */
             min-height: 100vh;
         }
         /* Configuração de Câmera e Canvas para cobrir a tela */
         video, canvas {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1;
+            display: none; /* A câmera começa oculta */
         }
-        canvas { display: none; }
 
         .container {
-            /* MUDEI: Torna o container semi-transparente e o move para baixo */
-            background-color: rgba(255, 255, 255, 0.95);
+            background-color: var(--form-background);
             padding: 2.5rem;
             border-radius: 12px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
             width: 100%;
             max-width: 650px;
             box-sizing: border-box;
-            transform: none; /* Removida a translação */
-            margin-bottom: 20px;
-            z-index: 10; /* Garante que fique acima da câmera */
+            z-index: 10;
         }
+        
+        /* NOVO ESTILO: Container de controle que aparecerá DURANTE a captura */
+        #capture-ui {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 1.5rem 1rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.8), rgba(0,0,0,0.6));
+            color: white;
+            text-align: center;
+            z-index: 5; /* Fica acima da câmera */
+            box-sizing: border-box;
+            display: none; /* Começa oculto */
+        }
+        #capture-ui h1 {
+            color: white;
+            margin-bottom: 1rem;
+        }
+        #capture-ui #status-text {
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+
+        /* Estilos do Formulário (Etapa 1) e Botões */
         h1 {
             color: #000000;
             text-align: center;
@@ -57,71 +78,30 @@
             margin-bottom: calc(2rem - 10px);
             font-weight: 700;
         }
-        .form-group {
-            margin-bottom: 19px;
-        }
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: var(--label-color);
-        }
-        input[type="text"],
-        textarea {
-            width: 100%;
-            padding: 0.8rem 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-size: 1rem;
+        .form-group { margin-bottom: 19px; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
+        input[type="text"] {
+            width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
+            border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
         .submit-btn {
-            background: linear-gradient(45deg, #007BFF, #0056b3);
-            color: white;
-            padding: 1rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 1.1rem;
-            font-weight: 600;
+            background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
+            color: white; padding: 1rem 1.5rem; border: none; border-radius: 8px;
+            cursor: pointer; width: 100%; font-size: 1.1rem; font-weight: 600;
         }
-        .submit-btn:disabled {
-            background: #aaa;
-            cursor: not-allowed;
-        }
-        #form-result {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 500;
-            display: none;
-        }
-        #form-result.error {
-            background-color: #fdecea;
-            color: var(--error-color);
-            display: block;
-        }
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: none; justify-content: center; align-items: center; z-index: 1000;
-        }
-        .modal-content {
-            background-color: var(--form-background); padding: 2.5rem 3.5rem;
-            border-radius: 12px; text-align: center;
-        }
-        .modal-content p {
-            margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--success-color);
-        }
-        /* Estilos para a área de status e preview */
-        #capture-area {
-            text-align: center;
-        }
+        .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+        /* Estilos de mensagens de erro e modal (mantidos) */
+        #form-result { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; text-align: center; font-weight: 500; display: none; }
+        #form-result.error { background-color: #fdecea; color: var(--error-color); display: block; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background-color: var(--form-background); padding: 2.5rem 3.5rem; border-radius: 12px; text-align: center; }
+        .modal-content p { margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--success-color); }
+
+        /* Preview na Etapa 2 (Aparece após a captura) */
         #preview-img {
-            border: 2px solid var(--primary-color);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            max-width: 90%; max-height: 150px; border-radius: 8px; margin-bottom: 10px;
+            border: 2px solid white; display: none; margin-left: auto; margin-right: auto;
         }
     </style>
 </head>
@@ -129,30 +109,34 @@
     <video id="video" autoplay playsinline muted></video>
     <canvas id="canvas"></canvas>
 
-    <div class="container" id="camera-container">
-        <h1>Capture o Problema</h1>
-        
-        <div id="capture-area">
-            <div id="status-text" style="font-size: 1.1rem; margin-bottom: 20px; font-weight: 600; color: var(--primary-color);">
-                Aguardando acesso à câmera e localização...
-            </div>
-            <img id="preview-img" style="max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 20px; display: none;" />
-        </div>
-
-        <form id="indication-form">
+    <div class="container" id="initial-form-container">
+        <h1>Formulário de Indicação</h1>
+        <form id="initial-form">
             <div class="form-group">
                 <label for="nome">Seu Nome Completo</label>
                 <input type="text" id="nome" name="nome" required>
             </div>
             
+            <button type="button" class="submit-btn" id="start-camera-button">
+                <span>▶️ Iniciar Câmera e GPS</span>
+            </button>
+        </form>
+        <div id="form-result"></div>
+    </div>
+    
+    <div id="capture-ui">
+        <img id="preview-img" alt="Pré-visualização do problema" />
+
+        <div id="status-text">Aguardando...</div>
+
+        <form id="indication-form">
             <input type="hidden" id="latitude" name="latitude">
             <input type="hidden" id="longitude" name="longitude">
             <input type="hidden" id="imagem_base64" name="imagem_base64">
             <input type="hidden" id="problema_identificado" name="problema_identificado">
             <input type="hidden" id="descricao_ai" name="descricao_ai">
-            
-            <button type="button" class="submit-btn" id="start-analysis-button">
-                <span>📸 Iniciar Captura e Análise</span>
+            <input type="hidden" id="nome_final" name="nome_final"> <button type="button" class="submit-btn" id="start-analysis-button" style="margin-top: 15px;">
+                <span>📸 Capturar Imagem e Analisar Problema</span>
             </button>
             
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
@@ -160,8 +144,11 @@
             </button>
         </form>
         
-        <div id="form-result"></div>
+        <button type="button" id="back-button" style="background: none; border: none; color: white; margin-top: 10px; font-size: 0.9rem;">
+             Voltar ao Formulário
+        </button>
     </div>
+
     <div id="success-modal" class="modal-overlay">
         <div class="modal-content">
             <p id="success-message"></p>
@@ -169,23 +156,34 @@
     </div>
 
     <script>
-        const form = document.getElementById('indication-form');
-        const resultDiv = document.getElementById('form-result');
-        const startAnalysisButton = document.getElementById('start-analysis-button');
-        const submitButton = document.getElementById('submit-button');
-        const statusText = document.getElementById('status-text');
+        // Elementos Etapa 1
+        const initialFormContainer = document.getElementById('initial-form-container');
+        const initialForm = document.getElementById('initial-form');
+        const startCameraButton = document.getElementById('start-camera-button');
+        const nomeInput = document.getElementById('nome');
+        
+        // Elementos Etapa 2 (Captura)
+        const captureUI = document.getElementById('capture-ui');
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         const previewImg = document.getElementById("preview-img");
+        const statusText = document.getElementById('status-text');
+        const startAnalysisButton = document.getElementById('start-analysis-button');
+        const backButton = document.getElementById('back-button');
         
-        // Campos de Input
-        const nomeInput = document.getElementById('nome');
+        // Elementos Etapa 3 (Envio)
+        const form = document.getElementById('indication-form');
+        const submitButton = document.getElementById('submit-button');
+        const resultDiv = document.getElementById('form-result');
+        
+        // Campos Ocultos (para transferência e envio)
         const latInput = document.getElementById('latitude');
         const lonInput = document.getElementById('longitude');
         const imgBase64Input = document.getElementById('imagem_base64');
         const problemaInput = document.getElementById('problema_identificado');
         const descricaoAIInput = document.getElementById('descricao_ai');
+        const nomeFinalInput = document.getElementById('nome_final');
 
         let isAnalyzing = false;
         let capturedImageBase64 = null;
@@ -212,87 +210,122 @@
                 input.setSelectionRange(cursorPosition, cursorPosition);
             }
         }
-        
-        // Aplica a sanitização ao campo NOME
         nomeInput.addEventListener('input', sanitizeInput);
         // --- FIM LÓGICA DE BLOQUEIO ---
 
         // --- 1. FUNÇÕES DE CÂMERA E GPS ---
 
-        function startCamera() {
+        function startCameraStream() {
             return navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } })
                 .then(stream => {
                     video.srcObject = stream;
                     video.style.display = 'block';
-                    statusText.textContent = 'Câmera pronta. Clique para capturar a imagem.';
+                    // statusText.textContent será definido no handler
                 })
                 .catch(err => {
-                    statusText.textContent = 'Erro ao acessar a câmera. Tente novamente.';
+                    statusText.textContent = 'Erro ao acessar a câmera. Verifique as permissões.';
                     console.error("Erro na Câmera:", err);
                     throw err;
                 });
+        }
+        
+        function stopCameraStream() {
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.style.display = 'none';
+                previewImg.style.display = 'none';
+            }
         }
 
         function getGeolocation() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
+                    statusText.textContent = 'Geolocalização não suportada. Usando apenas a foto.';
                     return resolve(null);
                 }
                 
-                // MENSAGEM DO GPS: Agora atualiza o status, mas NÃO bloqueia a UI
                 statusText.textContent = 'Tentando obter sua localização GPS...';
                 
-                // Define um timeout mais curto para não demorar
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        statusText.textContent = 'Localização GPS obtida com sucesso.';
+                        statusText.textContent = 'Localização GPS obtida. Prepare-se para capturar.';
                         resolve(position);
                     }, 
                     (error) => {
                         statusText.textContent = 'Acesso à localização negado ou falha no GPS. Usaremos apenas a foto.';
-                        resolve(null); // Resolve como null para não quebrar o fluxo
+                        resolve(null); 
                     }, 
-                    { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 } // Reduzindo o timeout para 3s
+                    { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 } 
                 );
             });
         }
         
-        // --- 2. INÍCIO DA CAPTURA (Botão 'Iniciar Captura e Análise') ---
+        // --- HANDLER: INICIAR CÂMERA (ETAPA 1 -> ETAPA 2) ---
+
+        startCameraButton.addEventListener('click', async () => {
+            const nomeSanitizado = nomeInput.value.replace(blockedWordsRegex, '').trim();
+            if (!nomeSanitizado) {
+                 resultDiv.innerHTML = `❌ O campo Nome Completo é obrigatório.`;
+                 resultDiv.style.display = 'block';
+                 return;
+            }
+            nomeInput.value = nomeSanitizado; // Atualiza o campo com o nome limpo
+
+            try {
+                startCameraButton.disabled = true;
+                startCameraButton.querySelector('span').textContent = 'Ativando Câmera...';
+                
+                // 1. Oculta o formulário inicial e mostra a UI de captura
+                initialFormContainer.style.display = 'none';
+                captureUI.style.display = 'block';
+                
+                // 2. Inicia a câmera e o GPS em paralelo
+                await startCameraStream(); 
+                
+                // Tenta obter o GPS (Não bloqueia o stream da câmera)
+                const geoPosition = await getGeolocation(); 
+                if (geoPosition) {
+                    currentLatitude = geoPosition.coords.latitude;
+                    currentLongitude = geoPosition.coords.longitude;
+                }
+                
+                statusText.textContent = 'Câmera pronta. Clique no botão para Capturar e Analisar.';
+
+            } catch (error) {
+                initialFormContainer.style.display = 'block'; // Volta para o formulário
+                captureUI.style.display = 'none';
+                resultDiv.innerHTML = `❌ Erro na Câmera: ${error.message}.`;
+                resultDiv.style.display = 'block';
+            } finally {
+                startCameraButton.disabled = false;
+                startCameraButton.querySelector('span').textContent = '▶️ Iniciar Câmera e GPS';
+            }
+        });
+        
+        // --- HANDLER: VOLTAR (ETAPA 2 -> ETAPA 1) ---
+        backButton.addEventListener('click', () => {
+            stopCameraStream();
+            captureUI.style.display = 'none';
+            initialFormContainer.style.display = 'flex'; // Exibe o formulário de nome novamente
+            // Limpa o estado da análise
+            submitButton.style.display = 'none';
+            startAnalysisButton.style.display = 'block';
+            previewImg.style.display = 'none';
+        });
+
+        // --- 2. INÍCIO DA CAPTURA (Botão 'Capturar Imagem e Analisar Problema') ---
 
         startAnalysisButton.addEventListener('click', async () => {
             if (isAnalyzing) return;
             isAnalyzing = true;
             
-            // Revalidação do nome
-            const nomeSanitizado = nomeInput.value.replace(blockedWordsRegex, '').trim();
-            if (!nomeSanitizado) {
-                 resultDiv.innerHTML = `❌ O campo Nome é obrigatório e não pode conter palavras inadequadas.`;
-                 resultDiv.style.display = 'block';
-                 resultDiv.classList.add('error');
-                 isAnalyzing = false;
-                 return;
-            }
-            nomeInput.value = nomeSanitizado; // Atualiza o campo com o nome limpo
-            
-            resultDiv.style.display = 'none'; // Limpa mensagens de erro anteriores
+            resultDiv.style.display = 'none'; 
 
             try {
                 startAnalysisButton.disabled = true;
                 startAnalysisButton.querySelector('span').textContent = 'Preparando...';
                 
-                // 1. Obter Localização (Chama de novo se for nulo, mas com timeout curto)
-                // Se já houver um valor, ele não chama novamente.
-                if (currentLatitude === null) {
-                    const geoPosition = await getGeolocation();
-                    if (geoPosition) {
-                        currentLatitude = geoPosition.coords.latitude;
-                        currentLongitude = geoPosition.coords.longitude;
-                        latInput.value = currentLatitude;
-                        lonInput.value = currentLongitude;
-                    }
-                }
-
-                // 2. Capturar Imagem
+                // Capturar Imagem
                 statusText.textContent = 'Capturando imagem...';
                 const MAX_WIDTH = 1024;
                 const scale = MAX_WIDTH / video.videoWidth;
@@ -302,17 +335,24 @@
                 capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.85);
 
                 // Parar a câmera e exibir a pré-visualização
-                if (video.srcObject) {
-                    video.srcObject.getTracks().forEach(track => track.stop());
-                    video.style.display = 'none';
-                }
+                stopCameraStream();
+                
                 previewImg.src = capturedImageBase64;
                 previewImg.style.display = 'block';
-
+                
                 // 3. Chamar a API de IA para Análise
                 statusText.textContent = 'Analisando imagem e gerando texto...';
                 startAnalysisButton.querySelector('span').textContent = 'Analisando com IA...';
                 
+                // Tenta obter o GPS uma última vez caso tenha falhado na inicialização
+                if (currentLatitude === null) {
+                    const geoPosition = await getGeolocation();
+                    if (geoPosition) {
+                        currentLatitude = geoPosition.coords.latitude;
+                        currentLongitude = geoPosition.coords.longitude;
+                    }
+                }
+
                 const analysisResponse = await fetch('/api/analyze-problem', { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -331,40 +371,40 @@
                 
                 // --- VERIFICAÇÃO DE SEGURANÇA E CONTEÚDO ---
                 
-                // A. Conteúdo Impróprio
                 if (analysisResult.is_inappropriate === true) {
                     throw new Error('Conteúdo da imagem sinalizado como impróprio. O envio foi bloqueado para moderação.');
                 }
                 
-                // B. Problema Não Detectado (Verifica a string retornada pela IA)
                 const problemTypeClean = analysisResult.problem_type.toLowerCase();
                 if (problemTypeClean.includes("nenhum problema") || problemTypeClean.includes("n/a") || problemTypeClean.includes("não detectado")) {
                     throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema cívico (buraco, lixo, poste, etc.).');
                 }
                 
-                // 4. Preencher dados no formulário (oculto)
+                // 4. Preencher campos ocultos e preparar para o envio
                 problemaInput.value = analysisResult.problem_type.replace(blockedWordsRegex, ''); 
                 descricaoAIInput.value = analysisResult.formal_description.replace(blockedWordsRegex, ''); 
                 imgBase64Input.value = capturedImageBase64; 
+                nomeFinalInput.value = nomeInput.value; // Transfere o nome
 
                 // 5. Mudar a interface para o modo de Revisão/Envio
                 const locationStatus = currentLatitude ? `Localização capturada.` : `Localização NÃO capturada.`;
-                statusText.innerHTML = `✅ **Problema:** ${problemaInput.value}. ${locationStatus} O texto para o vereador foi gerado. Clique em 'Enviar para Vereador'.`;
+                statusText.innerHTML = `✅ **Problema:** ${problemaInput.value}. ${locationStatus} Texto gerado. Clique em 'Enviar'.`;
                 startAnalysisButton.style.display = 'none';
                 submitButton.style.display = 'block';
 
             } catch (error) {
+                // Em caso de erro na análise, mostre o botão de análise novamente
                 statusText.innerHTML = `❌ Erro na análise: ${error.message}. Tente novamente.`;
-                console.error('Erro na Análise:', error);
+                startAnalysisButton.style.display = 'block';
+                submitButton.style.display = 'none';
+                
+                // Se falhou na análise, reinicia a câmera para o usuário tentar de novo
+                startCameraStream();
                 
             } finally {
                 isAnalyzing = false;
                 startAnalysisButton.disabled = false;
-                startAnalysisButton.querySelector('span').textContent = '📸 Iniciar Captura e Análise';
-                // Reinicia a câmera para uma nova tentativa se o envio não tiver aparecido
-                if(submitButton.style.display === 'none') {
-                    startCamera(); 
-                }
+                startAnalysisButton.querySelector('span').textContent = '📸 Capturar Imagem e Analisar Problema';
             }
         });
 
@@ -376,7 +416,9 @@
             
             submitButton.disabled = true;
             submitButton.querySelector('span').textContent = 'Enviando e-mail...';
-            resultDiv.style.display = 'none';
+            
+            // Revalidação final (nome já limpo na Etapa 1)
+            if (!nomeFinalInput.value) return; 
 
             // Dados a serem enviados
             const enderecoFormatado = currentLatitude && currentLongitude ? 
@@ -384,7 +426,7 @@
                 'Endereço não capturado via GPS.';
             
             const dataToSend = {
-                nome: nomeInput.value, 
+                nome: nomeFinalInput.value, 
                 endereco: enderecoFormatado, 
                 descricao: descricaoAIInput.value, 
                 imagem_base64: imgBase64Input.value, 
@@ -409,21 +451,25 @@
                 document.getElementById('success-message').textContent = "Indicação enviada com sucesso! O vereador receberá sua solicitação formatada pela IA.";
                 document.getElementById('success-modal').style.display = 'flex';
                 
-                // Limpa campos e reinicia a interface
-                form.reset();
-                previewImg.style.display = 'none';
+                // Reinicia a interface para a Etapa 1
+                initialForm.reset();
+                captureUI.style.display = 'none';
+                initialFormContainer.style.display = 'flex';
+                
+                // Limpa o estado da Etapa 2
                 submitButton.style.display = 'none';
                 startAnalysisButton.style.display = 'block';
-                startCamera();
-
+                previewImg.style.display = 'none';
+                
                 setTimeout(() => {
                     document.getElementById('success-modal').style.display = 'none';
                 }, 8000);
 
             } catch (error) {
-                resultDiv.innerHTML = `Ops! Algo deu errado ao enviar: ${error.message}`;
-                resultDiv.style.display = 'block';
-                resultDiv.classList.add('error');
+                statusText.innerHTML = `❌ Erro ao enviar: ${error.message}.`;
+                startAnalysisButton.style.display = 'block';
+                submitButton.style.display = 'none';
+                startCameraStream(); // Mantém a câmera ligada após erro de envio
             } finally {
                 submitButton.disabled = false;
                 submitButton.querySelector('span').textContent = '✅ Enviar para Vereador';
@@ -431,8 +477,9 @@
         });
 
         // --- 4. INICIALIZAÇÃO ---
-        // Inicia a câmera primeiro. Tenta obter o GPS em paralelo, sem bloqueio.
-        startCamera().then(() => getGeolocation()); 
+        // Garante que o container inicial esteja visível
+        initialFormContainer.style.display = 'flex';
+        
     </script>
 </body>
 </html>
