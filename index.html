@@ -25,7 +25,6 @@
             color: var(--text-color);
             margin: 0;
             padding: 0;
-            /* Deixa o body simples, o posicionamento será feito nos containers */
             min-height: 100vh;
         }
         /* Configuração de Câmera e Canvas */
@@ -50,9 +49,9 @@
             max-width: 650px;
             box-sizing: border-box;
             z-index: 10;
-            /* Inicia visível */
+            /* Inicia visível e com layout de coluna */
             display: flex; 
-            flex-direction: column; /* Necessário para alinhar o conteúdo */
+            flex-direction: column; 
         }
         
         /* Container de controle que aparecerá DURANTE a captura */
@@ -335,7 +334,9 @@
                 canvas.width = MAX_WIDTH;
                 canvas.height = video.videoHeight * scale;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.85);
+                // --- CORREÇÃO APLICADA: REDUZINDO A QUALIDADE PARA 0.6 ---
+                capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.6); 
+                // --------------------------------------------------------
 
                 // Parar a câmera e exibir a pré-visualização
                 stopCameraStream();
@@ -467,7 +468,6 @@
 
             } catch (error) {
                 statusText.innerHTML = `❌ Erro ao enviar: ${error.message}.`;
-                // Não reinicia a câmera, pois a foto (preview) e análise permanecem.
             } finally {
                 submitButton.disabled = false;
                 submitButton.querySelector('span').textContent = '✅ Enviar para Vereador';
