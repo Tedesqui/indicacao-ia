@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registre problemas em sua cidade e nos envie (Automatizado por IA)!!!</title>
+    <title>Mande o seu Pedido para o Vereador (Automatizado por IA)!!!</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -58,15 +58,13 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            padding: 1.5rem 1rem;
-            background: linear-gradient(to top, rgba(0,0,0,0.4), rgba(0,0,0,0.2), transparent); 
+            padding: 1rem 1rem 1.5rem 1rem; /* Ajustado padding inferior */
+            background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.6), transparent); /* Mais escuro para legibilidade */
             color: white;
             text-align: center;
             z-index: 5; 
             box-sizing: border-box;
             display: none; 
-            justify-content: center; 
-            align-items: flex-end; 
             flex-direction: column; 
             gap: 10px; 
         }
@@ -76,13 +74,45 @@
             background-color: rgba(0,0,0,0.6);
             padding: 8px 15px;
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 5px; /* Reduzido */
             font-size: 0.9em;
             width: fit-content;
             margin-left: auto;
             margin-right: auto;
             display: none; 
         }
+
+        /* --- NOVO CSS PARA ÁREA DE REVISÃO --- */
+        #review-area {
+            display: none; /* Começa oculto */
+            width: 90%;
+            max-width: 400px;
+            margin: 5px auto 10px auto;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        #review-area label {
+            font-weight: 600;
+            font-size: 0.9em;
+            color: white;
+            margin-bottom: 5px;
+            display: block;
+        }
+        #review-area textarea {
+            width: 100%;
+            box-sizing: border-box;
+            background: #f9f9f9;
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95em;
+        }
+        /* --- FIM DO NOVO CSS --- */
+
 
         /* Estilos do Formulário (Mantidos) */
         h1 { color: #000000; text-align: center; margin-top: 0; margin-bottom: 2rem; font-weight: 700; }
@@ -97,6 +127,8 @@
             color: white; padding: 1rem 1.5rem; border: none; border-radius: 8px;
             cursor: pointer; width: 100%; max-width: 400px; 
             font-size: 1.1rem; font-weight: 600;
+            margin-left: auto; /* Centraliza os botões */
+            margin-right: auto; /* Centraliza os botões */
         }
         .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
 
@@ -123,10 +155,10 @@
     <canvas id="canvas"></canvas>
 
     <div class="container" id="initial-form-container">
-        <h1>Registre um Problema e envie pra Prefeitura</h1>
+        <h1>Capture um Problema e envie pro Vereador</h1>
         <form id="initial-form">
             <div class="form-group">
-                <label for="nome">Seu Nome Completo</label>
+                <label for="nome">Seu Nome Completo:</label>
                 <input type="text" id="nome" name="nome" required>
             </div>
             
@@ -146,6 +178,12 @@
         <img id="preview-img" alt="Pré-visualização do problema" />
 
         <div id="status-text" style="display: none;"></div> 
+        
+        <div id="review-area">
+            <label for="descricao_ia_review">Texto a ser enviado (gerado por IA):</label>
+            <textarea id="descricao_ia_review" rows="6"></textarea>
+        </div>
+        
         <form id="indication-form">
             <input type="hidden" id="latitude" name="latitude">
             <input type="hidden" id="longitude" name="longitude">
@@ -155,19 +193,19 @@
 
             <input type="hidden" id="imagem_base64" name="imagem_base64">
             <input type="hidden" id="problema_identificado" name="problema_identificado">
-            <input type="hidden" id="descricao_ai" name="descricao_ai">
+            <input type="hidden" id="descricao_ai" name="descricao_ai"> 
             
             <input type="hidden" id="nome_final" name="nome_final"> 
             <input type="hidden" id="telefone_final" name="telefone_final"> 
 
             
-            <button type="button" class="submit-btn" id="capture-restart-button" style="margin-top: 15px;">
+            <button type="button" class="submit-btn" id="capture-restart-button">
                 <span>📸 Capturar Imagem e Analisar Problema</span>
             </button>
             
             
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
-                <span>✅ Enviar para Prefeitura</span>
+                <span>✅ Enviar para Vereador</span>
             </button>
         </form>
         
@@ -200,6 +238,9 @@
         const statusText = document.getElementById('status-text');
         const captureRestartButton = document.getElementById('capture-restart-button'); 
         const backButton = document.getElementById('back-button');
+        // NOVO: Elementos de Revisão
+        const reviewArea = document.getElementById('review-area');
+        const descricaoIaReview = document.getElementById('descricao_ia_review');
         
         // Elementos Etapa 3 (Envio)
         const form = document.getElementById('indication-form');
@@ -245,7 +286,13 @@
             }
         }
         nomeInput.addEventListener('input', sanitizeInput);
-        // --- FIM LÓGICA DE BLOQUEIO ---
+        
+        // NOVO: Sincroniza a caixa de texto visível com o campo oculto quando o usuário edita
+        descricaoIaReview.addEventListener('input', () => {
+            descricaoAIInput.value = descricaoIaReview.value;
+        });
+        // --- FIM LÓGICA DE BLOQUEIO E SINCRONIZAÇÃO ---
+
 
         // --- FUNÇÕES DE CÂMERA E GPS (sem alterações) ---
 
@@ -281,7 +328,7 @@
                     return resolve(null);
                 }
                 
-                statusText.textContent = 'Tentando obter a localização GPS...';
+                statusText.textContent = 'Obtendo a localização GPS...';
                 statusText.style.display = 'block';
                 
                 navigator.geolocation.getCurrentPosition(
@@ -363,6 +410,8 @@
             // Limpa campos ocultos da Etapa 2
             nomeFinalInput.value = '';
             telefoneFinalInput.value = '';
+            reviewArea.style.display = 'none'; // Oculta a área de revisão
+            descricaoIaReview.value = ''; // Limpa a área de revisão
 
             submitButton.style.display = 'none';
             resetCaptureButton();
@@ -396,6 +445,8 @@
             statusText.style.display = 'none';
             submitButton.style.display = 'none';
             previewImg.style.display = 'none';
+            reviewArea.style.display = 'none'; // Oculta a área de revisão
+            descricaoIaReview.value = ''; // Limpa a área de revisão
             
             try {
                 captureRestartButton.disabled = true;
@@ -421,7 +472,6 @@
             if (isAnalyzing) return;
             isAnalyzing = true;
             
-            // A validação completa já foi feita na Etapa 1
             if (!nomeFinalInput.value.trim() || !telefoneFinalInput.value.trim()) {
                  statusText.innerHTML = `❌ Erro: Por favor, volte e preencha os campos obrigatórios.`;
                  statusText.style.display = 'block';
@@ -486,17 +536,21 @@
                 
                 const problemTypeClean = analysisResult.problem_type.toLowerCase();
                 if (problemTypeClean.includes("nenhum problema") || problemTypeClean.includes("n/a") || problemTypeClean.includes("não detectado")) {
-                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema público de sua cidade (buraco na rua, poste sem luz, etc.).');
+                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema público (buraco na rua, poste sem luz, etc.).');
                 }
                 
                 // 4. Preencher campos ocultos e preparar para o envio
-                problemaInput.value = analysisResult.problem_type.replace(blockedWordsRegex, ''); 
-                descricaoAIInput.value = analysisResult.formal_description.replace(blockedWordsRegex, ''); 
-                imgBase64Input.value = capturedImageBase64; 
+                const sanitizedDescription = analysisResult.formal_description.replace(blockedWordsRegex, '');
                 
-                // Preenche os campos de endereço da IA
+                problemaInput.value = analysisResult.problem_type.replace(blockedWordsRegex, ''); 
+                descricaoAIInput.value = sanitizedDescription; // Campo oculto
+                imgBase64Input.value = capturedImageBase64; 
                 streetAddressInput.value = analysisResult.street_address || '';
                 streetPositionInput.value = analysisResult.street_position || '';
+
+                // --- NOVO: MOSTRAR O TEXTO PARA O USUÁRIO ---
+                descricaoIaReview.value = sanitizedDescription; // Campo visível
+                reviewArea.style.display = 'block'; // Mostra a área de revisão
 
 
                 // 5. Mudar a interface para o modo de Revisão/Envio
@@ -504,7 +558,7 @@
                                     `${analysisResult.street_address} (${analysisResult.street_position})` :
                                     `Localização GPS capturada.`;
                 
-                statusText.innerHTML = `✅ **Problema:** ${problemaInput.value}. Endereço estimado: **${addressText}**. Clique em 'Enviar' ou 'Reiniciar Câmera'.`;
+                statusText.innerHTML = `✅ **Problema:** ${problemaInput.value}. Endereço: **${addressText}**. Revise o texto abaixo e clique em 'Enviar'.`;
                 
                 submitButton.style.display = 'block'; 
                 switchToRestartButton(); 
@@ -513,6 +567,7 @@
                 statusText.innerHTML = `❌ Erro na análise: ${error.message}. Clique em 'Reiniciar Câmera' para tentar novamente.`;
                 statusText.style.display = 'block';
                 submitButton.style.display = 'none'; 
+                reviewArea.style.display = 'none'; // Esconde a revisão se der erro
                 
                 previewImg.style.display = 'block';
                 
@@ -531,7 +586,8 @@
             submitButton.disabled = true;
             submitButton.querySelector('span').textContent = 'Enviando e-mail...';
             
-            // Dados a serem enviados
+            // O 'descricaoAIInput' já foi sincronizado pelo listener de 'input'
+            
             const enderecoGPS = currentLatitude && currentLongitude ? 
                 `Latitude: ${currentLatitude}, Longitude: ${currentLongitude}` : 
                 'Endereço não capturado via GPS.';
@@ -540,7 +596,7 @@
                 nome: nomeFinalInput.value, 
                 telefone: telefoneFinalInput.value, 
                 endereco: enderecoGPS, 
-                descricao: descricaoAIInput.value, 
+                descricao: descricaoAIInput.value, // Envia o texto (editado ou não)
                 imagem_base64: imgBase64Input.value, 
                 problema: problemaInput.value,
                 street_address: streetAddressInput.value,
@@ -562,7 +618,7 @@
                     throw new Error(result.message || 'Ocorreu um erro no servidor.');
                 }
 
-                document.getElementById('success-message').textContent = "Indicação enviada com sucesso! A prefeitura receberá sua solicitação formatada pela IA.";
+                document.getElementById('success-message').textContent = "Indicação enviada com sucesso! O vereador receberá sua solicitação formatada pela IA.";
                 document.getElementById('success-modal').style.display = 'flex';
                 
                 // Reinicia a interface para a Etapa 1
@@ -575,6 +631,8 @@
                 resetCaptureButton(); 
                 previewImg.style.display = 'none';
                 statusText.style.display = 'none';
+                reviewArea.style.display = 'none';
+                descricaoIaReview.value = '';
                 
                 setTimeout(() => {
                     document.getElementById('success-modal').style.display = 'none';
@@ -584,7 +642,7 @@
                 statusText.innerHTML = `❌ Erro ao enviar: ${error.message}.`;
                 statusText.style.display = 'block';
                 submitButton.disabled = false;
-                submitButton.querySelector('span').textContent = '✅ Enviar para Prefeitura';
+                submitButton.querySelector('span').textContent = '✅ Enviar para Vereador';
             } finally {
                 // ...
             }
@@ -597,7 +655,3 @@
     </script>
 </body>
 </html>
-
-
-
-
