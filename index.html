@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mande o seu Pedido - Captura Automatizada por IA</title>
+    <title>Registre problemas em sua cidade e nos envie (Tudo Automatizado por IA)!!!</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -167,7 +167,7 @@
             
             
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
-                <span>✅ Enviar para Vereador</span>
+                <span>✅ Enviar para Prefeitura</span>
             </button>
         </form>
         
@@ -486,7 +486,7 @@
                 
                 const problemTypeClean = analysisResult.problem_type.toLowerCase();
                 if (problemTypeClean.includes("nenhum problema") || problemTypeClean.includes("n/a") || problemTypeClean.includes("não detectado")) {
-                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema cívico (buraco, lixo, poste, etc.).');
+                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema público de sua cidade (buraco na rua, poste sem luz, etc.).');
                 }
                 
                 // 4. Preencher campos ocultos e preparar para o envio
@@ -584,7 +584,7 @@
                 statusText.innerHTML = `❌ Erro ao enviar: ${error.message}.`;
                 statusText.style.display = 'block';
                 submitButton.disabled = false;
-                submitButton.querySelector('span').textContent = '✅ Enviar para Vereador';
+                submitButton.querySelector('span').textContent = '✅ Enviar para Prefeitura';
             } finally {
                 // ...
             }
@@ -597,4 +597,5 @@
     </script>
 </body>
 </html>
+
 
