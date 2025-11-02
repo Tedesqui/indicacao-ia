@@ -46,7 +46,7 @@ const analyzeProblemHandler = async (req, res) => {
 
         ***TAREFA DE LOCALIZAÇÃO ADICIONAL (SE COORDENADAS EXISTIREM):***
         Se as coordenadas LATITUDE: ${latitude} e LONGITUDE: ${longitude} estiverem presentes e forem válidas (ou seja, diferentes de 'null'), use seu conhecimento geográfico para determinar o endereço e a posição na rua.
-        - **Endereço Estimado:** Determine o nome da rua mais próxima e, se possível, a cidade e o estado. Se as coordenadas forem NULAS, use "N/A - Coordenadas Ausentes".
+        - **Endereço Estimado:** Determine o nome da rua e, se possível, a cidade e o estado. Se as coordenadas forem NULAS, use "N/A - Coordenadas Ausentes".
         - **Posição na Rua:** Estime se o problema está no INÍCIO, MEIO ou FINAL da via. Se as coordenadas forem NULAS, use "N/A".
 
         REGRAS DE FILTRAGEM DE SEGURANÇA (MUITO IMPORTANTES):
