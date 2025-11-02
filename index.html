@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mande o seu Pedido para o Vereador (Automatizado por IA)!!!</title>
+    <title>Registre problemas em sua cidade e nos envie (Automatizado por IA)!!!</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -58,8 +58,8 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            padding: 1rem 1rem 1.5rem 1rem; /* Ajustado padding inferior */
-            background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.6), transparent); /* Mais escuro para legibilidade */
+            padding: 1rem 1rem 1.5rem 1rem; 
+            background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.6), transparent); 
             color: white;
             text-align: center;
             z-index: 5; 
@@ -74,7 +74,7 @@
             background-color: rgba(0,0,0,0.6);
             padding: 8px 15px;
             border-radius: 8px;
-            margin-bottom: 5px; /* Reduzido */
+            margin-bottom: 5px; 
             font-size: 0.9em;
             width: fit-content;
             margin-left: auto;
@@ -82,9 +82,9 @@
             display: none; 
         }
 
-        /* --- NOVO CSS PARA ÁREA DE REVISÃO --- */
+        /* --- CSS PARA ÁREA DE REVISÃO --- */
         #review-area {
-            display: none; /* Começa oculto */
+            display: none; 
             width: 90%;
             max-width: 400px;
             margin: 5px auto 10px auto;
@@ -127,8 +127,8 @@
             color: white; padding: 1rem 1.5rem; border: none; border-radius: 8px;
             cursor: pointer; width: 100%; max-width: 400px; 
             font-size: 1.1rem; font-weight: 600;
-            margin-left: auto; /* Centraliza os botões */
-            margin-right: auto; /* Centraliza os botões */
+            margin-left: auto; 
+            margin-right: auto; 
         }
         .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
 
@@ -155,10 +155,10 @@
     <canvas id="canvas"></canvas>
 
     <div class="container" id="initial-form-container">
-        <h1>Capture um Problema e envie pro Vereador</h1>
+        <h1>Registre um Problema e envie para o Vereador</h1>
         <form id="initial-form">
             <div class="form-group">
-                <label for="nome">Seu Nome Completo:</label>
+                <label for="nome">Seu Nome Completo</label>
                 <input type="text" id="nome" name="nome" required>
             </div>
             
@@ -205,7 +205,7 @@
             
             
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
-                <span>✅ Enviar para Vereador</span>
+                <span>✅ Enviar para o Vereador</span>
             </button>
         </form>
         
@@ -238,7 +238,6 @@
         const statusText = document.getElementById('status-text');
         const captureRestartButton = document.getElementById('capture-restart-button'); 
         const backButton = document.getElementById('back-button');
-        // NOVO: Elementos de Revisão
         const reviewArea = document.getElementById('review-area');
         const descricaoIaReview = document.getElementById('descricao_ia_review');
         
@@ -247,7 +246,7 @@
         const submitButton = document.getElementById('submit-button');
         const resultDiv = document.getElementById('form-result'); 
         
-        // Campos Ocultos (para transferência e envio)
+        // Campos Ocultos
         const latInput = document.getElementById('latitude');
         const lonInput = document.getElementById('longitude');
         const imgBase64Input = document.getElementById('imagem_base64');
@@ -257,7 +256,6 @@
         const telefoneFinalInput = document.getElementById('telefone_final'); 
         const streetAddressInput = document.getElementById('street_address');
         const streetPositionInput = document.getElementById('street_position');
-
 
         let isAnalyzing = false;
         let capturedImageBase64 = null;
@@ -287,7 +285,6 @@
         }
         nomeInput.addEventListener('input', sanitizeInput);
         
-        // NOVO: Sincroniza a caixa de texto visível com o campo oculto quando o usuário edita
         descricaoIaReview.addEventListener('input', () => {
             descricaoAIInput.value = descricaoIaReview.value;
         });
@@ -328,7 +325,7 @@
                     return resolve(null);
                 }
                 
-                statusText.textContent = 'Obtendo a localização GPS...';
+                statusText.textContent = 'Tentando obter a localização GPS...';
                 statusText.style.display = 'block';
                 
                 navigator.geolocation.getCurrentPosition(
@@ -337,12 +334,12 @@
                         resolve(position);
                     }, 
                     (error) => {
-                        statusText.textContent = 'GPS falhou ou negado. Continuar sem localização.';
+                        statusText.textContent = 'GPS falhou ou negado.';
                         statusText.style.display = 'block';
                         setTimeout(() => statusText.style.display = 'none', 3000); 
                         resolve(null); 
                     }, 
-                    { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 } 
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 } // Aumentado para 5s
                 );
             });
         }
@@ -369,7 +366,6 @@
             resultDiv.style.display = 'none'; 
             nomeInput.value = nomeSanitizado; 
             
-            // Transfere os dados limpos e validados para os campos ocultos de destino
             nomeFinalInput.value = nomeSanitizado;
             telefoneFinalInput.value = telefone;
 
@@ -382,6 +378,7 @@
                 
                 await startCameraStream(); 
                 
+                // Tenta pegar o GPS na Etapa 1
                 const geoPosition = await getGeolocation(); 
                 if (geoPosition) {
                     currentLatitude = geoPosition.coords.latitude;
@@ -407,11 +404,10 @@
             captureUI.style.display = 'none';
             initialFormContainer.style.display = 'flex'; 
             
-            // Limpa campos ocultos da Etapa 2
             nomeFinalInput.value = '';
             telefoneFinalInput.value = '';
-            reviewArea.style.display = 'none'; // Oculta a área de revisão
-            descricaoIaReview.value = ''; // Limpa a área de revisão
+            reviewArea.style.display = 'none'; 
+            descricaoIaReview.value = ''; 
 
             submitButton.style.display = 'none';
             resetCaptureButton();
@@ -445,13 +441,14 @@
             statusText.style.display = 'none';
             submitButton.style.display = 'none';
             previewImg.style.display = 'none';
-            reviewArea.style.display = 'none'; // Oculta a área de revisão
-            descricaoIaReview.value = ''; // Limpa a área de revisão
+            reviewArea.style.display = 'none'; 
+            descricaoIaReview.value = ''; 
             
             try {
                 captureRestartButton.disabled = true;
-                captureRestartButton.querySelector('span').textContent = 'Ativando Câmera...';
+                captureRestartButton.querySelector('span').textContent = 'Ativando a Câmera...';
                 await startCameraStream();
+                // Tenta pegar o GPS novamente
                 const geoPosition = await getGeolocation(); 
                 if (geoPosition) {
                     currentLatitude = geoPosition.coords.latitude;
@@ -484,8 +481,25 @@
                 captureRestartButton.querySelector('span').textContent = 'Preparando...';
                 statusText.style.display = 'block'; 
                 statusText.textContent = 'Capturando imagem...';
+
+                // --- NOVO: VERIFICAÇÃO DE GPS OBRIGATÓRIO ---
+                if (currentLatitude === null || currentLongitude === null) {
+                    // Se o GPS falhou na Etapa 1, tenta UMA VEZ MAIS.
+                    statusText.textContent = 'GPS falhou na 1ª tentativa. Tentando novamente...';
+                    const geoPosition = await getGeolocation();
+                    if (geoPosition) {
+                        currentLatitude = geoPosition.coords.latitude;
+                        currentLongitude = geoPosition.coords.longitude;
+                    } else {
+                        // Se falhou de novo, bloqueia o envio.
+                        throw new Error('Não foi possível obter sua localização GPS. A indicação não pode ser enviada sem a localização. Tente reiniciar (Voltar) ou verifique as permissões do navegador.');
+                    }
+                }
+                // --- FIM DA VERIFICAÇÃO DE GPS ---
+
                 
                 // 1. Capturar Imagem
+                statusText.textContent = 'Capturando imagem...';
                 const MAX_WIDTH = 1024;
                 const scale = MAX_WIDTH / video.videoWidth;
                 canvas.width = MAX_WIDTH;
@@ -499,15 +513,6 @@
                 previewImg.src = capturedImageBase64;
                 previewImg.style.display = 'block';
                 
-                // 2. Tenta obter o GPS uma última vez
-                if (currentLatitude === null) {
-                    const geoPosition = await getGeolocation();
-                    if (geoPosition) {
-                        currentLatitude = geoPosition.coords.latitude;
-                        currentLongitude = geoPosition.coords.longitude;
-                    }
-                }
-
                 // 3. Chamar a API de IA para Análise
                 statusText.textContent = 'Analisando imagem e gerando texto...';
                 captureRestartButton.querySelector('span').textContent = 'Analisando com IA...';
@@ -548,7 +553,7 @@
                 streetAddressInput.value = analysisResult.street_address || '';
                 streetPositionInput.value = analysisResult.street_position || '';
 
-                // --- NOVO: MOSTRAR O TEXTO PARA O USUÁRIO ---
+                // --- MOSTRAR O TEXTO PARA O USUÁRIO ---
                 descricaoIaReview.value = sanitizedDescription; // Campo visível
                 reviewArea.style.display = 'block'; // Mostra a área de revisão
 
@@ -567,9 +572,15 @@
                 statusText.innerHTML = `❌ Erro na análise: ${error.message}. Clique em 'Reiniciar Câmera' para tentar novamente.`;
                 statusText.style.display = 'block';
                 submitButton.style.display = 'none'; 
-                reviewArea.style.display = 'none'; // Esconde a revisão se der erro
+                reviewArea.style.display = 'none'; 
                 
-                previewImg.style.display = 'block';
+                // Se a câmera foi parada, mas a análise falhou (ex: erro de GPS), mostre a prévia
+                if (capturedImageBase64) {
+                    previewImg.style.display = 'block';
+                } else {
+                    // Se o erro foi ANTES da captura (ex: GPS), reinicie a câmera
+                    restartCamera(); 
+                }
                 
                 switchToRestartButton(); 
             } finally {
@@ -592,6 +603,15 @@
                 `Latitude: ${currentLatitude}, Longitude: ${currentLongitude}` : 
                 'Endereço não capturado via GPS.';
             
+            // VERIFICAÇÃO FINAL (Redundante, mas segura)
+            if (!currentLatitude) {
+                statusText.innerHTML = `❌ Erro: O envio foi bloqueado pois a localização GPS é inválida.`;
+                statusText.style.display = 'block';
+                submitButton.disabled = false;
+                submitButton.querySelector('span').textContent = '✅ Enviar para Vereador';
+                return;
+            }
+
             const dataToSend = {
                 nome: nomeFinalInput.value, 
                 telefone: telefoneFinalInput.value, 
@@ -655,4 +675,3 @@
     </script>
 </body>
 </html>
-
