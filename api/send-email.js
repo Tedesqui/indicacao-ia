@@ -1,16 +1,13 @@
 /*
  * Ficheiro: api/send-email.js
  * ROTA: /api/send-email (POST)
- * ATUALIZADO: Inclui o campo 'telefone' e corrige o bug 'Seu Nome'.
- * SINTAXE: ES Module (import/export).
+ * ATUALIZADO: Removido 'street_position' do corpo do e-mail.
  */
 
 import express from 'express';
 import nodemailer from 'nodemailer';
 
 const app = express();
-
-// Aumenta o limite do body JSON
 app.use(express.json({ limit: '50mb' })); 
 
 const sendEmailHandler = (req, res) => {
@@ -23,30 +20,29 @@ const sendEmailHandler = (req, res) => {
         return res.status(405).json({ message: 'Method Not Allowed.' });
     }
 
-    // --- CORREÇÃO: Recebe 'telefone' e 'nome' corretamente do req.body ---
+    // --- Recebendo os campos (sem street_position) ---
     const { 
         nome, 
-        telefone, // Recebe o novo campo 'telefone'
-        endereco, 
+        telefone, 
+        endereco, // GPS Bruto
         descricao, 
         imagem_base64, 
         problema, 
-        street_address,
-        street_position
+        street_address // Nome da Rua (Estimado pela IA)
     } = req.body; 
     
-    // Configura o Nodemailer (requer Senha de App)
+    // Configura o Nodemailer
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
             user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS, // Deve ser a Senha de App de 16 dígitos
+            pass: process.env.EMAIL_PASS, 
         },
     });
 
     // --- FORMATAÇÃO DO CORPO DO E-MAIL ---
-    const enderecoEstimadoTexto = street_address && street_position ?
-        `<b>${street_address}</b> (Posição: ${street_position})` :
+    const enderecoEstimadoTexto = street_address ?
+        `<b>${street_address}</b>` :
         `Endereço Estimado Indisponível`;
         
     const coordenadasTexto = endereco ? 
@@ -102,5 +98,4 @@ const sendEmailHandler = (req, res) => {
     });
 };
 
-// Exporta o manipulador para o ambiente Serverless
 export default sendEmailHandler;
