@@ -1,7 +1,7 @@
 /*
  * Ficheiro: api/send-email.js
  * ROTA: /api/send-email (POST)
- * ATUALIZADO: Remove o campo 'endereco' manual e foca 100% no GPS.
+ * CORRIGIDO: Link do Google Maps estava quebrado.
  */
 
 import express from 'express';
@@ -55,7 +55,11 @@ const sendEmailHandler = async (req, res) => {
         
         // O frontend agora deve *sempre* enviar o GPS, pois é obrigatório
         if (gps_latitude && gps_longitude && gps_latitude !== "null") {
-            const mapsLink = `https://www.google.com/maps?q=${gps_latitude},${gps_longitude}`;
+            
+            // !!! CORREÇÃO APLICADA AQUI !!!
+            const mapsLink = `https://www.google.com/maps/search/?api=1&query=${gps_latitude},${gps_longitude}`;
+            // !!! FIM DA CORREÇÃO !!!
+
             locationHtml = `
                 <p><strong>Localização Precisa (GPS do App):</strong> 
                     <a href="${mapsLink}" target="_blank" style="font-size: 1.1em; color: #007BFF; font-weight: bold;">
@@ -72,7 +76,6 @@ const sendEmailHandler = async (req, res) => {
 
 
         // --- FORMATAÇÃO DO CORPO DO E-MAIL (Atualizado) ---
-        // O template não tem mais a secção "Endereço Informado pelo Cidadão"
         const mailOptions = {
             from: `Formulário de Indicação IA <${process.env.EMAIL_USER}>`,
             to: process.env.EMAIL_RECEIVER,
@@ -87,9 +90,7 @@ const sendEmailHandler = async (req, res) => {
                 <hr>
                 <h2>📍 Detalhes da Localização</h2>
                 
-                ${locationHtml} <!-- <-- Bloco de HTML (agora só GPS) -->
-                
-                <hr>
+                ${locationHtml} <hr>
                 <p><strong>Relato Formal Gerado pela IA (Baseado na Imagem):</strong></p>
                 <div style="border: 1px solid #ccc; padding: 15px; background: #f9f9f9; line-height: 1.5;">
                     ${descricao.replace(/\n/g, '<br>')}
@@ -131,4 +132,3 @@ app.get('/api/send-email', sendEmailHandler); // Lida com GETs
 
 // Exporta o app para o Vercel
 export default app;
-
