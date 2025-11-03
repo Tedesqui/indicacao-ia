@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registre um problema e nos envie (Automatizado por IA)!!!</title>
+    <title>Registre um pedido e nos envie (Automatizado por IA)!!!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-color: #007BFF;
@@ -25,10 +28,13 @@
             min-height: 100vh;
             overflow: hidden; 
         }
+        /* Configuração de Câmera e Canvas */
         video, canvas {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1;
             display: none; 
         }
+
+        /* Container Inicial Fixado no Topo */
         #initial-form-container {
             position: fixed;
             top: 10px; 
@@ -45,6 +51,8 @@
             display: flex; 
             flex-direction: column; 
         }
+        
+        /* Container de controle que aparecerá DURANTE a captura */
         #capture-ui {
             position: fixed;
             bottom: 0;
@@ -60,6 +68,7 @@
             flex-direction: column; 
             gap: 10px; 
         }
+        
         #capture-ui #status-text { 
             color: white; 
             background-color: rgba(0,0,0,0.6);
@@ -72,6 +81,8 @@
             margin-right: auto;
             display: none; 
         }
+
+        /* --- CSS PARA ÁREA DE REVISÃO --- */
         #review-area {
             display: none; 
             width: 90%;
@@ -100,12 +111,20 @@
             font-family: 'Inter', sans-serif;
             font-size: 0.95em;
         }
+        /* --- FIM DO NOVO CSS --- */
+
+
+        /* Estilos do Formulário (Mantidos) */
         h1 { color: #000000; text-align: center; margin-top: 0; margin-bottom: 2rem; font-weight: 700; }
         .form-group { margin-bottom: 19px; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
-        input[type="text"], input[type="tel"] {
+        input[type="text"], input[type="tel"], textarea { /* Adicionado textarea */
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
+        }
+        textarea {
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
         }
         .submit-btn {
             background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
@@ -116,11 +135,15 @@
             margin-right: auto; 
         }
         .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+        /* Estilos de mensagens de erro e modal */
         #form-result { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; text-align: center; font-weight: 500; display: none; }
         #form-result.error { background-color: #fdecea; color: var(--error-color); display: block; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background-color: var(--form-background); padding: 2.5rem 3.5rem; border-radius: 12px; text-align: center; }
         .modal-content p { margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--success-color); }
+
+        /* Preview na Etapa 2 */
         #preview-img {
             max-width: 90%; max-height: 200px; 
             border-radius: 8px; margin-bottom: 10px;
@@ -147,9 +170,14 @@
                 <label for="telefone">Telefone / WhatsApp</label>
                 <input type="tel" id="telefone" name="telefone" required placeholder="(XX) XXXXX-XXXX">
             </div>
+
+            <div class="form-group">
+                <label for="endereco">Endereço do Problema</label>
+                <textarea id="endereco" name="endereco" required placeholder="Rua, Número, Bairro, Ponto de Referência..." rows="3"></textarea>
+            </div>
             
             <button type="button" class="submit-btn" id="start-camera-button">
-                <span>▶️ Iniciar Câmera e GPS</span>
+                <span>▶️ Iniciar Câmera</span>
             </button>
         </form>
         <div id="form-result"></div>
@@ -166,20 +194,16 @@
         </div>
         
         <form id="indication-form">
-            <input type="hidden" id="latitude" name="latitude">
-            <input type="hidden" id="longitude" name="longitude">
-            
-            <input type="hidden" id="street_address" name="street_address">
-
             <input type="hidden" id="imagem_base64" name="imagem_base64">
             <input type="hidden" id="problema_identificado" name="problema_identificado">
             <input type="hidden" id="descricao_ai" name="descricao_ai"> 
             
             <input type="hidden" id="nome_final" name="nome_final"> 
             <input type="hidden" id="telefone_final" name="telefone_final"> 
+            <input type="hidden" id="endereco_final" name="endereco_final"> 
 
             
-            <button type="button" class="submit-btn" id="capture-restart-button">
+            <button type="button" class="submit-btn" id="capture-restart-button" style="margin-top: 15px; margin-bottom: 20px;">
                 <span>📸 Capturar Imagem e Analisar Problema</span>
             </button>
             
@@ -202,12 +226,15 @@
     </div>
 
     <script>
-        // ... (Todas as declarações de constantes, let, e a lógica de bloqueio de palavras) ...
+        // Elementos Etapa 1
         const initialFormContainer = document.getElementById('initial-form-container');
         const initialForm = document.getElementById('initial-form');
         const startCameraButton = document.getElementById('start-camera-button');
         const nomeInput = document.getElementById('nome');
         const telefoneInput = document.getElementById('telefone'); 
+        const enderecoInput = document.getElementById('endereco'); // NOVO
+        
+        // Elementos Etapa 2 (Captura)
         const captureUI = document.getElementById('capture-ui');
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
@@ -218,25 +245,26 @@
         const backButton = document.getElementById('back-button');
         const reviewArea = document.getElementById('review-area');
         const descricaoIaReview = document.getElementById('descricao_ia_review');
+        
+        // Elementos Etapa 3 (Envio)
         const form = document.getElementById('indication-form');
         const submitButton = document.getElementById('submit-button');
         const resultDiv = document.getElementById('form-result'); 
-        const latInput = document.getElementById('latitude');
-        const lonInput = document.getElementById('longitude');
+        
+        // Campos Ocultos
         const imgBase64Input = document.getElementById('imagem_base64');
         const problemaInput = document.getElementById('problema_identificado');
         const descricaoAIInput = document.getElementById('descricao_ai');
         const nomeFinalInput = document.getElementById('nome_final');
         const telefoneFinalInput = document.getElementById('telefone_final'); 
-        const streetAddressInput = document.getElementById('street_address');
+        const enderecoFinalInput = document.getElementById('endereco_final'); // NOVO
 
 
         let isAnalyzing = false;
         let capturedImageBase64 = null;
-        let currentLatitude = null;
-        let currentLongitude = null;
         let cameraStream = null; 
 
+        // --- LÓGICA DE BLOQUEIO DE PALAVRAS ---
         const blockedWords = [
             'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido', 
             'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar', 
@@ -257,10 +285,13 @@
             }
         }
         nomeInput.addEventListener('input', sanitizeInput);
+        enderecoInput.addEventListener('input', sanitizeInput); // Aplica nos endereços também
         
         descricaoIaReview.addEventListener('input', () => {
-            descricaoAIInput.value = descricaoIaReview.value;
+            descricaoAIInput.value = descricaoIaReview.value.replace(blockedWordsRegex, '');
         });
+        // --- FIM LÓGICA DE BLOQUEIO E SINCRONIZAÇÃO ---
+
 
         // --- FUNÇÕES DE CÂMERA (Sem alteração) ---
         async function startCameraStream() {
@@ -288,70 +319,18 @@
                 cameraStream = null;
             }
         }
-
-        // --- FUNÇÃO DE GPS (TRAVA DE PRECISÃO MAIS RÍGIDA) ---
-        function getGeolocation() {
-            return new Promise((resolve, reject) => {
-                if (!navigator.geolocation) {
-                    return resolve(null);
-                }
-                
-                statusText.textContent = 'Buscando sinal de GPS de alta precisão...';
-                statusText.style.display = 'block';
-                
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        // SUCESSO
-                        const accuracy = position.coords.accuracy; 
-                        console.log("Precisão do GPS obtida: " + accuracy + " metros.");
-
-                        // --- TRAVA DE PRECISÃO FINAL (150 METROS) ---
-                        // Se a precisão for NULA, indefinida, 0, OU maior que 150 metros, REJEITE.
-                        if (!accuracy || accuracy > 150) { 
-                            console.warn("GPS lock obtido, mas precisão muito baixa: " + (accuracy || 'N/A') + "m. Rejeitando.");
-                            statusText.textContent = "GPS com baixa precisão (Erro > 150m). Tente em local aberto.";
-                            statusText.style.display = 'block';
-                            resolve(null); // Rejeita a posição
-                        } else {
-                            // Precisão aceitável (GPS ou Wi-Fi)
-                            statusText.style.display = 'none'; 
-                            resolve(position);
-                        }
-                    }, 
-                    (error) => {
-                        // ERRO (Permissão negada, Timeout, etc.)
-                        let errorMessage = 'Falha no GPS. ';
-                        switch(error.code) {
-                            case error.PERMISSION_DENIED:
-                                errorMessage = "GPS bloqueado. Você precisa autorizar a 'Localização Precisa' no navegador.";
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                errorMessage = "Sinal de GPS indisponível. Tente em um local aberto.";
-                                break;
-                            case error.TIMEOUT:
-                                errorMessage = "Tempo limite do GPS esgotado (10s). Sinal muito fraco.";
-                                break;
-                        }
-                        
-                        statusText.textContent = errorMessage;
-                        statusText.style.display = 'block';
-                        resolve(null); 
-                    }, 
-                    { 
-                        enableHighAccuracy: true, 
-                        timeout: 10000, 
-                        maximumAge: 0 
-                    } 
-                );
-            });
-        }
+        
+        // --- FUNÇÃO GPS REMOVIDA ---
+        
         
         // --- HANDLER: INICIAR CÂMERA (ETAPA 1 -> ETAPA 2) ---
-        // (Sem alterações, exceto a validação de telefone)
+        // (REMOVIDO GPS, ADICIONADO ENDEREÇO MANUAL)
         startCameraButton.addEventListener('click', async () => {
             const nomeSanitizado = nomeInput.value.replace(blockedWordsRegex, '').trim();
             const telefone = telefoneInput.value.trim().replace(/\D/g, ''); 
+            const endereco = enderecoInput.value.replace(blockedWordsRegex, '').trim(); // NOVO
 
+            // --- VALIDAÇÃO REFORÇADA ---
             if (nomeSanitizado.length < 4) {
                  resultDiv.innerHTML = `❌ O campo Nome Completo deve ter no mínimo 4 letras.`;
                  resultDiv.style.display = 'block';
@@ -362,12 +341,19 @@
                  resultDiv.style.display = 'block';
                  return;
             }
+            if (endereco.length < 10) { // NOVO
+                 resultDiv.innerHTML = `❌ O campo Endereço deve ser preenchido (mínimo 10 caracteres).`;
+                 resultDiv.style.display = 'block';
+                 return;
+            }
+            // --- FIM VALIDAÇÃO REFORÇADA ---
 
             resultDiv.style.display = 'none'; 
             nomeInput.value = nomeSanitizado; 
             
             nomeFinalInput.value = nomeSanitizado;
             telefoneFinalInput.value = telefone;
+            enderecoFinalInput.value = endereco; // NOVO
 
             try {
                 startCameraButton.disabled = true;
@@ -378,17 +364,6 @@
                 
                 await startCameraStream(); 
                 
-                // Tentativa 1 de GPS (em paralelo)
-                getGeolocation().then(geoPosition => {
-                    if (geoPosition) {
-                        currentLatitude = geoPosition.coords.latitude;
-                        currentLongitude = geoPosition.coords.longitude;
-                        statusText.textContent = "GPS OK. Pronto para capturar.";
-                        statusText.style.display = 'block';
-                        setTimeout(() => statusText.style.display = 'none', 3000); 
-                    }
-                });
-                
                 resetCaptureButton();
 
             } catch (error) {
@@ -398,7 +373,7 @@
                 resultDiv.style.display = 'block';
             } finally {
                 startCameraButton.disabled = false;
-                startCameraButton.querySelector('span').textContent = '▶️ Iniciar Câmera e GPS';
+                startCameraButton.querySelector('span').textContent = '▶️ Iniciar Câmera'; // Removido "e GPS"
             }
         });
         
@@ -410,6 +385,7 @@
             
             nomeFinalInput.value = '';
             telefoneFinalInput.value = '';
+            enderecoFinalInput.value = ''; // NOVO
             reviewArea.style.display = 'none'; 
             descricaoIaReview.value = ''; 
 
@@ -450,13 +426,6 @@
                 captureRestartButton.disabled = true;
                 captureRestartButton.querySelector('span').textContent = 'Ativando a Câmera...';
                 await startCameraStream();
-                
-                getGeolocation().then(geoPosition => { 
-                    if (geoPosition) {
-                        currentLatitude = geoPosition.coords.latitude;
-                        currentLongitude = geoPosition.coords.longitude;
-                    }
-                });
                 resetCaptureButton(); 
             } catch (error) {
                 statusText.innerHTML = `❌ Erro ao reiniciar câmera: ${error.message}.`;
@@ -467,12 +436,13 @@
 
 
         // --- 2. INÍCIO DA CAPTURA (MODIFICADO) ---
+        // (REMOVIDO GPS)
         async function startAnalysis() {
             if (isAnalyzing) return;
             isAnalyzing = true;
             
-            if (!nomeFinalInput.value.trim() || !telefoneFinalInput.value.trim()) {
-                 statusText.innerHTML = `❌ Erro: Por favor, volte e preencha os campos obrigatórios.`;
+            if (!nomeFinalInput.value.trim() || !telefoneFinalInput.value.trim() || !enderecoFinalInput.value.trim()) {
+                 statusText.innerHTML = `❌ Erro: Por favor, volte e preencha todos os campos.`;
                  statusText.style.display = 'block';
                  isAnalyzing = false;
                  return;
@@ -482,21 +452,9 @@
                 captureRestartButton.disabled = true;
                 captureRestartButton.querySelector('span').textContent = 'Preparando...';
                 statusText.style.display = 'block'; 
-                
-                // --- VERIFICAÇÃO DE GPS OBRIGATÓRIO (COM TRAVA DE PRECISÃO) ---
-                if (currentLatitude === null || currentLongitude === null) {
-                    statusText.textContent = 'GPS não capturado. Tentando novamente (Modo Obrigatório)...';
-                    const geoPosition = await getGeolocation(); 
-                    
-                    if (geoPosition) {
-                        currentLatitude = geoPosition.coords.latitude;
-                        currentLongitude = geoPosition.coords.longitude;
-                    } else {
-                        throw new Error(statusText.textContent || 'Não foi possível obter sua localização GPS. A indicação não pode ser enviada sem a localização.');
-                    }
-                }
-                // --- FIM DA VERIFICAÇÃO DE GPS ---
+                statusText.textContent = 'Capturando imagem...';
 
+                // --- GPS REMOVIDO ---
                 
                 // 1. Capturar Imagem
                 statusText.textContent = 'Capturando imagem...';
@@ -513,7 +471,8 @@
                 previewImg.src = capturedImageBase64;
                 previewImg.style.display = 'block';
                 
-                // 3. Chamar a API de IA para Análise
+                
+                // 3. Chamar a API de IA para Análise (SEM GPS)
                 statusText.textContent = 'Analisando imagem e gerando texto...';
                 captureRestartButton.querySelector('span').textContent = 'Analisando com IA...';
                 
@@ -521,9 +480,8 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        image: capturedImageBase64, 
-                        latitude: currentLatitude, 
-                        longitude: currentLongitude 
+                        image: capturedImageBase64
+                        // latitude e longitude removidos
                     }),
                 });
                 
@@ -550,20 +508,15 @@
                 problemaInput.value = analysisResult.problem_type.replace(blockedWordsRegex, ''); 
                 descricaoAIInput.value = sanitizedDescription; // Campo oculto
                 imgBase64Input.value = capturedImageBase64; 
-                streetAddressInput.value = analysisResult.street_address || '';
-                // streetPositionInput.value = analysisResult.street_position || ''; // Removido
 
-
-                // 5. Mudar a interface para o modo de Revisão/Envio
-                const addressText = analysisResult.street_address ? 
-                                    `${analysisResult.street_address}` : // Removida a Posição
-                                    `Localização GPS capturada.`;
-                
-                statusText.innerHTML = `✅ **Problema:** ${problemaInput.value}. Endereço: **${addressText}**. Revise o texto abaixo e clique em 'Enviar'.`;
-                
+                // --- MOSTRAR O TEXTO PARA O USUÁRIO ---
                 descricaoIaReview.value = sanitizedDescription; // Campo visível
                 reviewArea.style.display = 'block'; // Mostra a área de revisão
 
+
+                // 5. Mudar a interface para o modo de Revisão/Envio
+                statusText.innerHTML = `✅ **Problema:** ${problemaInput.value}. Revise o texto abaixo e clique em 'Enviar'.`;
+                
                 submitButton.style.display = 'block'; 
                 switchToRestartButton(); 
 
@@ -593,25 +546,14 @@
             submitButton.disabled = true;
             submitButton.querySelector('span').textContent = 'Enviando e-mail...';
             
-            if (!currentLatitude || !currentLongitude) {
-                statusText.innerHTML = `❌ Erro: O envio foi bloqueado pois a localização GPS é inválida.`;
-                statusText.style.display = 'block';
-                submitButton.disabled = false;
-                submitButton.querySelector('span').textContent = '✅ Enviar para o Vereador';
-                return;
-            }
-
-            const enderecoGPS = `Latitude: ${currentLatitude}, Longitude: ${currentLongitude}`;
-            
             const dataToSend = {
                 nome: nomeFinalInput.value, 
                 telefone: telefoneFinalInput.value, 
-                endereco: enderecoGPS, 
+                endereco: enderecoFinalInput.value, // Envia o endereço manual
                 descricao: descricaoAIInput.value, 
                 imagem_base64: imgBase64Input.value, 
-                problema: problemaInput.value,
-                street_address: streetAddressInput.value,
-                // street_position: streetPositionInput.value // Removido
+                problema: problemaInput.value
+                // GPS e street_address removidos
             };
 
             const backendUrl = '/api/send-email'; 
