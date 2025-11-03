@@ -1,7 +1,7 @@
 /*
  * Ficheiro: api/analyze-problem.js
  * ROTA: /api/analyze-problem (POST)
- * ATUALIZADO: Lógica de GPS totalmente removida. A IA foca apenas na imagem.
+ * ATUALIZADO: Prompt da IA corrigido para NUNCA gerar saudações ou assinaturas.
  */
 
 import express from 'express';
@@ -25,35 +25,38 @@ const analyzeProblemHandler = async (req, res) => {
     }
     
     try {
-        // REMOVIDO: latitude e longitude
-        const { image } = req.body;
+        const { image } = req.body; // GPS removido
 
         if (!image) {
             return res.status(400).json({ error: 'A imagem é obrigatória para análise.' });
         }
 
-        // --- PROMPT SIMPLIFICADO ---
+        // --- PROMPT ATUALIZADO (MAIS RESTRITO) ---
         const promptText = `
         Você é um **Assistente de Serviço Cívico e Moderador de Conteúdo**. Sua tarefa primária é analisar a imagem fornecida para identificar um problema urbano.
 
         REGRAS DE FILTRAGEM DE SEGURANÇA:
         1.  Se a imagem contiver nudez explícita, partes íntimas, ou conteúdo sexualmente sugestivo, defina "is_inappropriate" como true.
-        2.  Se a imagem não for de um problema urbano identificável (ex: é uma selfie, uma paisagem que não tem nada de errado), defina "is_inappropriate" como false e "problem_type" como "Nenhum problema urbano detectado."
+        2.  Se a imagem não for de um problema urbano identificável (ex: é uma selfie), defina "is_inappropriate" como false e "problem_type" como "Nenhum problema urbano detectado."
 
         Se o conteúdo for APROPRIADO e for um PROBLEMA URBANO:
         1.  Defina "is_inappropriate" como false.
         2.  **Identificação:** Identifique o problema principal (ex: "Buraco na pavimentação", "Poste de luz queimado", "Lixo acumulado").
-        3.  **Geração de Texto Formal:** Gere uma descrição detalhada e formal (em Português do Brasil) em formato de corpo de e-mail sobre o problema na imagem, para ser enviada a uma autoridade.
+        
+        3.  **Geração de Texto Formal (IMPORTANTE):** Gere uma descrição detalhada e objetiva (em Português do Brasil) que descreva *apenas* o problema visto na imagem.
+            * **NÃO inclua saudações** (como 'Prezado Vereador').
+            * **NÃO inclua uma assinatura** (como 'Atenciosamente' ou 'Seu Nome').
+            * O texto deve ser *apenas* a descrição do problema.
 
         O Formato de Saída DEVE ser um único objeto JSON:
 
         {
           "is_inappropriate": true/false,
           "problem_type": "O problema identificado (uma frase curta)",
-          "formal_description": "O corpo completo da reclamação formal (focada APENAS no problema da imagem)."
+          "formal_description": "A descrição pura do problema da imagem, sem saudações ou assinaturas."
         }
         `;
-        // --- FIM DO PROMPT SIMPLIFICADO ---
+        // --- FIM DO PROMPT ATUALIZADO ---
 
 
         const completion = await openai.chat.completions.create({
