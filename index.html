@@ -136,7 +136,7 @@
     <canvas id="canvas"></canvas>
 
     <div class="container" id="initial-form-container">
-        <h1>Registre um Problema e envie para o Vereador</h1>
+        <h1>Capture um Problema e envie pra Prefeitura</h1>
         <form id="initial-form">
             <div class="form-group">
                 <label for="nome">Seu Nome Completo</label>
@@ -186,7 +186,7 @@
             
             
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
-                <span>✅ Enviar para o Vereador</span>
+                <span>✅ Enviar para Vereador</span>
             </button>
         </form>
         
@@ -290,7 +290,7 @@
             }
         }
 
-        // --- FUNÇÃO DE GPS (MODIFICADA) ---
+        // --- FUNÇÃO DE GPS (MODIFICADA COM TRAVA DE PRECISÃO) ---
         function getGeolocation() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
@@ -303,11 +303,24 @@
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         // SUCESSO
-                        statusText.style.display = 'none'; 
-                        resolve(position);
+                        const accuracy = position.coords.accuracy; // Precisão em metros
+                        console.log("Precisão do GPS obtida: " + accuracy + " metros.");
+
+                        // --- TRAVA DE PRECISÃO ---
+                        // Se a precisão for pior que 1000 metros (1km), é lixo (provavelmente IP).
+                        if (accuracy > 1000) { 
+                            console.warn("GPS lock obtido, mas precisão muito baixa: " + accuracy + "m. Rejeitando.");
+                            statusText.textContent = "GPS com baixa precisão (Erro de " + Math.round(accuracy/1000) + "km). Tente em local aberto.";
+                            statusText.style.display = 'block';
+                            resolve(null); // Rejeita a posição
+                        } else {
+                            // Precisão aceitável (GPS ou Wi-Fi)
+                            statusText.style.display = 'none'; 
+                            resolve(position);
+                        }
                     }, 
                     (error) => {
-                        // ERRO
+                        // ERRO (Permissão negada, Timeout, etc.)
                         let errorMessage = 'Falha no GPS. ';
                         switch(error.code) {
                             case error.PERMISSION_DENIED:
@@ -317,26 +330,24 @@
                                 errorMessage = "Sinal de GPS indisponível. Tente em um local aberto.";
                                 break;
                             case error.TIMEOUT:
-                                errorMessage = "Tempo limite do GPS esgotado. Sinal muito fraco.";
+                                errorMessage = "Tempo limite do GPS esgotado (10s). Sinal muito fraco.";
                                 break;
                         }
                         
                         statusText.textContent = errorMessage;
                         statusText.style.display = 'block';
-                        // Não esconde a mensagem de erro imediatamente
                         resolve(null); 
                     }, 
                     { 
-                        enableHighAccuracy: true, // Força o uso do chip de GPS
-                        timeout: 10000, // AUMENTADO: 10 segundos de tempo limite
-                        maximumAge: 0 // Força uma nova leitura (não usa cache)
+                        enableHighAccuracy: true, 
+                        timeout: 10000, // 10 segundos de tempo limite
+                        maximumAge: 0 
                     } 
                 );
             });
         }
         
         // --- HANDLER: INICIAR CÂMERA (ETAPA 1 -> ETAPA 2) ---
-        // (Sem alterações, a validação de GPS foi movida para a Etapa 2)
         startCameraButton.addEventListener('click', async () => {
             const nomeSanitizado = nomeInput.value.replace(blockedWordsRegex, '').trim();
             const telefone = telefoneInput.value.trim().replace(/\D/g, ''); 
@@ -360,7 +371,7 @@
 
             try {
                 startCameraButton.disabled = true;
-                startCameraButton.querySelector('span').textContent = 'Ativando Câmera...';
+                startCameraButton.querySelector('span').textContent = 'Ativando a Câmera...';
                 
                 initialFormContainer.style.display = 'none';
                 captureUI.style.display = 'flex'; 
@@ -392,7 +403,6 @@
         });
         
         // --- HANDLER: VOLTAR (ETAPA 2 -> ETAPA 1) ---
-        // (Sem alterações)
         backButton.addEventListener('click', () => {
             stopCameraStream();
             captureUI.style.display = 'none';
@@ -438,10 +448,10 @@
             
             try {
                 captureRestartButton.disabled = true;
-                captureRestartButton.querySelector('span').textContent = 'Ativando Câmera...';
+                captureRestartButton.querySelector('span').textContent = 'Ativando a Câmera...';
                 await startCameraStream();
                 
-                getGeolocation().then(geoPosition => { // Tenta GPS novamente
+                getGeolocation().then(geoPosition => { 
                     if (geoPosition) {
                         currentLatitude = geoPosition.coords.latitude;
                         currentLongitude = geoPosition.coords.longitude;
@@ -457,7 +467,6 @@
 
 
         // --- 2. INÍCIO DA CAPTURA (MODIFICADO) ---
-        // (Validação de GPS Obrigatório)
         async function startAnalysis() {
             if (isAnalyzing) return;
             isAnalyzing = true;
@@ -484,8 +493,8 @@
                         currentLatitude = geoPosition.coords.latitude;
                         currentLongitude = geoPosition.coords.longitude;
                     } else {
-                        // Se falhou DE NOVO, bloqueia o envio.
-                        throw new Error('Não foi possível obter sua localização GPS. A indicação não pode ser enviada sem a localização. Tente em um local aberto e verifique as permissões.');
+                        // Se falhou de novo, bloqueia o envio. (O erro específico já foi definido pela getGeolocation)
+                        throw new Error(statusText.textContent || 'Não foi possível obter sua localização GPS. A indicação não pode ser enviada sem a localização.');
                     }
                 }
                 // --- FIM DA VERIFICAÇÃO DE GPS ---
@@ -583,14 +592,12 @@
 
 
         // --- 3. SUBMISSÃO FINAL DO FORMULÁRIO (MODIFICADO) ---
-        // (Validação de GPS Obrigatório)
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             submitButton.disabled = true;
             submitButton.querySelector('span').textContent = 'Enviando e-mail...';
             
-            // VERIFICAÇÃO FINAL (Redundante, mas segura)
             if (!currentLatitude || !currentLongitude) {
                 statusText.innerHTML = `❌ Erro: O envio foi bloqueado pois a localização GPS é inválida.`;
                 statusText.style.display = 'block';
@@ -651,7 +658,7 @@
                 statusText.innerHTML = `❌ Erro ao enviar: ${error.message}.`;
                 statusText.style.display = 'block';
                 submitButton.disabled = false;
-                submitButton.querySelector('span').textContent = '✅ Enviar para Vereador';
+                submitButton.querySelector('span').textContent = '✅ Enviar para o Vereador';
             } finally {
                 // ...
             }
