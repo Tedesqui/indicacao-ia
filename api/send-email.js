@@ -1,134 +1,93 @@
 /*
  * Ficheiro: api/send-email.js
  * ROTA: /api/send-email (POST)
- * CORRIGIDO: Link do Google Maps estava quebrado.
+ * ATUALIZADO: Recebe 'telefone' e 'endereco' manual. Remove lógica de GPS.
  */
 
 import express from 'express';
 import nodemailer from 'nodemailer';
-import cors from 'cors';
 
-// Inicializa o app Express
 const app = express();
+app.use(express.json({ limit: '50mb' })); 
 
-// Middlewares
-app.use(cors()); // Habilita o CORS
-app.use(express.json({ limit: '50mb' })); // Habilita JSON com limite de 50mb para a imagem
-
-// O handler principal da rota
-const sendEmailHandler = async (req, res) => {
+const sendEmailHandler = (req, res) => {
     
-    // Responde ao método GET (usado por Vercel para "acordar" a função)
     if (req.method === 'GET') {
         return res.status(405).json({ message: 'Method Not Allowed. Use POST para envio.' });
     }
-
-    // Garante que é um POST
+    
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed.' });
     }
 
-    try {
-        // --- Extrai os dados (sem o campo 'endereco') ---
-        const { 
-            nome, 
-            telefone, 
-            // endereco, // REMOVIDO
-            descricao, 
-            imagem_base64, 
-            problema,
-            gps_latitude,  // Recebido do frontend
-            gps_longitude  // Recebido do frontend
-        } = req.body; 
+    // --- Recebendo os campos (com 'endereco' manual) ---
+    const { 
+        nome, 
+        telefone, 
+        endereco, // Endereço Manual
+        descricao, 
+        imagem_base64, 
+        problema
+    } = req.body; 
+    
+    // Configura o Nodemailer
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS, 
+        },
+    });
+
+    // --- FORMATAÇÃO DO CORPO DO E-MAIL ---
+    const mailOptions = {
+        from: `Formulário de Indicação IA <${process.env.EMAIL_USER}>`,
+        to: process.env.EMAIL_RECEIVER,
+        subject: `[INDICAÇÃO IA] ${problema || 'Nova Indicação de Problema Urbano'}`, 
+        html: `
+            <h1>Nova Indicação Automatizada por IA</h1>
+            <p><strong>Problema Identificado:</strong> ${problema || 'N/A'}</p>
+            <hr>
+            <h2>👤 Contato do Cidadão</h2>
+            <p><strong>Nome:</strong> ${nome}</p>
+            <p><strong>Telefone/WhatsApp:</strong> <a href="https://wa.me/55${telefone}">${telefone}</a></p>
+            <hr>
+            <h2>📍 Detalhes da Localização</h2>
+            <p><strong>Endereço Informado pelo Cidadão:</strong></p>
+            <p style="font-size: 1.1em; background: #f9f9f9; border: 1px solid #ccc; padding: 10px;">
+                ${endereco.replace(/\n/g, '<br>')}
+            </p>
+            <hr>
+            <p><strong>Relato Formal Gerado pela IA (Baseado na Imagem):</strong></p>
+            <div style="border: 1px solid #ccc; padding: 15px; background: #f9f9f9; line-height: 1.5;">
+                ${descricao.replace(/\n/g, '<br>')}
+            </div>
+            <hr>
+            <p>${imagem_base64 ? 'Uma imagem foi anexada para referência.' : 'Nenhuma imagem enviada.'}</p>
+        `,
+        attachments: [], 
+    };
+
+    // Cria o anexo a partir da string Base64
+    if (imagem_base64) {
+        const base64Data = imagem_base64.replace(/^data:image\/\w+;base64,/, "");
+        const imageBuffer = Buffer.from(base64Data, 'base64');
         
-        // Configura o Nodemailer
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS, 
-            },
+        mailOptions.attachments.push({
+            filename: `problema-urbano-${Date.now()}.jpeg`, 
+            content: imageBuffer,
+            contentType: 'image/jpeg',
         });
-
-        // --- HTML de Localização (Agora 100% focado no GPS) ---
-        let locationHtml = ""; // Começa vazio
-        
-        // O frontend agora deve *sempre* enviar o GPS, pois é obrigatório
-        if (gps_latitude && gps_longitude && gps_latitude !== "null") {
-            
-            // !!! CORREÇÃO APLICADA AQUI !!!
-            const mapsLink = `https://www.google.com/maps/search/?api=1&query=${gps_latitude},${gps_longitude}`;
-            // !!! FIM DA CORREÇÃO !!!
-
-            locationHtml = `
-                <p><strong>Localização Precisa (GPS do App):</strong> 
-                    <a href="${mapsLink}" target="_blank" style="font-size: 1.1em; color: #007BFF; font-weight: bold;">
-                        Clique para ver no Google Maps
-                    </a>
-                </p>
-                <p>(Coordenadas: ${gps_latitude}, ${gps_longitude})</p>
-            `;
-        } else {
-            // Fallback caso algo falhe (embora o frontend agora exija)
-            locationHtml = `<p><strong>Localização Precisa (GPS):</strong> Não fornecida (Falha no App).</p>`;
-        }
-        // --- Fim da Mudança ---
-
-
-        // --- FORMATAÇÃO DO CORPO DO E-MAIL (Atualizado) ---
-        const mailOptions = {
-            from: `Formulário de Indicação IA <${process.env.EMAIL_USER}>`,
-            to: process.env.EMAIL_RECEIVER,
-            subject: `[INDICAÇÃO IA] ${problema || 'Nova Indicação de Problema Urbano'}`, 
-            html: `
-                <h1>Nova Indicação Automatizada por IA</h1>
-                <p><strong>Problema Identificado:</strong> ${problema || 'N/A'}</p>
-                <hr>
-                <h2>👤 Contato do Cidadão</h2>
-                <p><strong>Nome:</strong> ${nome}</p>
-                <p><strong>Telefone/WhatsApp:</strong> <a href="https://wa.me/55${telefone}">${telefone}</a></p>
-                <hr>
-                <h2>📍 Detalhes da Localização</h2>
-                
-                ${locationHtml} <hr>
-                <p><strong>Relato Formal Gerado pela IA (Baseado na Imagem):</strong></p>
-                <div style="border: 1px solid #ccc; padding: 15px; background: #f9f9f9; line-height: 1.5;">
-                    ${descricao.replace(/\n/g, '<br>')}
-                </div>
-                <hr>
-                <p>${imagem_base64 ? 'Uma imagem foi anexada para referência.' : 'Nenhuma imagem enviada.'}</p>
-            `,
-            attachments: [], 
-        };
-
-        // --- Anexo (Sem alteração) ---
-        if (imagem_base64) {
-            // Remove o prefixo 'data:image/jpeg;base64,'
-            const base64Data = imagem_base64.replace(/^data:image\/\w+;base64,/, "");
-            const imageBuffer = Buffer.from(base64Data, 'base64');
-            
-            mailOptions.attachments.push({
-                filename: `problema-urbano-${Date.now()}.jpeg`, 
-                content: imageBuffer,
-                contentType: 'image/jpeg',
-            });
-        }
-
-        // --- Envia o e-mail (Sem alteração) ---
-        await transporter.sendMail(mailOptions);
-        
-        res.status(200).json({ message: 'E-mail enviado com sucesso!' });
-
-    } catch (error) {
-        // Tratamento de erro
-        console.error('Erro ao enviar e-mail:', error);
-        return res.status(500).json({ message: 'Falha ao enviar o e-mail.' });
     }
+
+    // Envia o e-mail
+    transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+            console.error('Erro ao enviar e-mail:', error);
+            return res.status(500).json({ message: 'Falha ao enviar o e-mail.' });
+        }
+        res.status(200).json({ message: 'E-mail enviado com sucesso!' });
+    });
 };
 
-// Define as rotas que este handler irá responder
-app.post('/api/send-email', sendEmailHandler);
-app.get('/api/send-email', sendEmailHandler); // Lida com GETs
-
-// Exporta o app para o Vercel
-export default app;
+export default sendEmailHandler;
