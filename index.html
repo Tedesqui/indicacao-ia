@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registre um pedido e nos envie (Automatizada por IA)!!!</title>
+    <title>Registre um problema e nos envie (Automatizado por IA)!!!</title>
     <style>
         :root {
             --primary-color: #007BFF;
@@ -229,7 +229,6 @@
         const nomeFinalInput = document.getElementById('nome_final');
         const telefoneFinalInput = document.getElementById('telefone_final'); 
         const streetAddressInput = document.getElementById('street_address');
-        // const streetPositionInput = document.getElementById('street_position'); // Removido
 
 
         let isAnalyzing = false;
@@ -306,11 +305,11 @@
                         const accuracy = position.coords.accuracy; 
                         console.log("Precisão do GPS obtida: " + accuracy + " metros.");
 
-                        // --- TRAVA DE PRECISÃO (150 METROS) ---
-                        // Se a precisão for pior que 50 metros, é lixo (provavelmente IP ou torre de celular).
-                        if (accuracy > 50) { 
-                            console.warn("GPS lock obtido, mas precisão muito baixa: " + accuracy + "m. Rejeitando.");
-                            statusText.textContent = "GPS com baixa precisão (Erro > 50m). Tente em local aberto.";
+                        // --- TRAVA DE PRECISÃO FINAL (150 METROS) ---
+                        // Se a precisão for NULA, indefinida, 0, OU maior que 150 metros, REJEITE.
+                        if (!accuracy || accuracy > 150) { 
+                            console.warn("GPS lock obtido, mas precisão muito baixa: " + (accuracy || 'N/A') + "m. Rejeitando.");
+                            statusText.textContent = "GPS com baixa precisão (Erro > 150m). Tente em local aberto.";
                             statusText.style.display = 'block';
                             resolve(null); // Rejeita a posição
                         } else {
@@ -372,7 +371,7 @@
 
             try {
                 startCameraButton.disabled = true;
-                startCameraButton.querySelector('span').textContent = 'Ativando Câmera...';
+                startCameraButton.querySelector('span').textContent = 'Ativando a Câmera...';
                 
                 initialFormContainer.style.display = 'none';
                 captureUI.style.display = 'flex'; 
@@ -449,7 +448,7 @@
             
             try {
                 captureRestartButton.disabled = true;
-                captureRestartButton.querySelector('span').textContent = 'Ativando Câmera...';
+                captureRestartButton.querySelector('span').textContent = 'Ativando a Câmera...';
                 await startCameraStream();
                 
                 getGeolocation().then(geoPosition => { 
