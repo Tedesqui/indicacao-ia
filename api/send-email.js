@@ -1,7 +1,7 @@
 /*
  * Ficheiro: api/send-email.js
  * ROTA: /api/send-email (POST)
- * ATUALIZADO: Inclui Telefone/WhatsApp, street_address e street_position no e-mail.
+ * ATUALIZADO: Inclui o campo 'telefone' e corrige o bug 'Seu Nome'.
  * SINTAXE: ES Module (import/export).
  */
 
@@ -10,7 +10,7 @@ import nodemailer from 'nodemailer';
 
 const app = express();
 
-// Aumenta o limite do body JSON para garantir que Express possa ler a requisição POST
+// Aumenta o limite do body JSON
 app.use(express.json({ limit: '50mb' })); 
 
 const sendEmailHandler = (req, res) => {
@@ -23,24 +23,24 @@ const sendEmailHandler = (req, res) => {
         return res.status(405).json({ message: 'Method Not Allowed.' });
     }
 
-    // --- RECEBENDO TODOS OS CAMPOS DO FRONTEND ---
+    // --- CORREÇÃO: Recebe 'telefone' e 'nome' corretamente do req.body ---
     const { 
         nome, 
-        telefone, // NOVO: Campo Telefone/WhatsApp
-        endereco, // GPS Bruto
+        telefone, // Recebe o novo campo 'telefone'
+        endereco, 
         descricao, 
         imagem_base64, 
         problema, 
-        street_address, // Nome da Rua + Cidade/Estado (Estimado pela IA)
-        street_position // INÍCIO, MEIO, FINAL (Estimado pela IA)
+        street_address,
+        street_position
     } = req.body; 
     
-    // Configura o Nodemailer
+    // Configura o Nodemailer (requer Senha de App)
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
             user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
+            pass: process.env.EMAIL_PASS, // Deve ser a Senha de App de 16 dígitos
         },
     });
 
@@ -57,7 +57,7 @@ const sendEmailHandler = (req, res) => {
     const mailOptions = {
         from: `Formulário de Indicação IA <${process.env.EMAIL_USER}>`,
         to: process.env.EMAIL_RECEIVER,
-        subject: `[INDICAÇÃO IA] ${problema || 'Nova Indicação de Problema Urbano'} - ${street_address || 'Localização Desconhecida'}`, 
+        subject: `[INDICAÇÃO IA] ${problema || 'Nova Indicação'} - ${street_address || 'Localização Desconhecida'}`, 
         html: `
             <h1>Nova Indicação Automatizada por IA</h1>
             <p><strong>Problema Identificado:</strong> ${problema || 'N/A'}</p>
@@ -82,7 +82,6 @@ const sendEmailHandler = (req, res) => {
 
     // Cria o anexo a partir da string Base64
     if (imagem_base64) {
-        // Remove o prefixo 'data:image/jpeg;base64,'
         const base64Data = imagem_base64.replace(/^data:image\/\w+;base64,/, "");
         const imageBuffer = Buffer.from(base64Data, 'base64');
         
