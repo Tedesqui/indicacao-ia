@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registre problemas em sua cidade e nos envie (Automatizado por IA)!!!</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-color: #007BFF;
@@ -28,13 +25,10 @@
             min-height: 100vh;
             overflow: hidden; 
         }
-        /* Configuração de Câmera e Canvas */
         video, canvas {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1;
             display: none; 
         }
-
-        /* Container Inicial Fixado no Topo */
         #initial-form-container {
             position: fixed;
             top: 10px; 
@@ -51,8 +45,6 @@
             display: flex; 
             flex-direction: column; 
         }
-        
-        /* Container de controle que aparecerá DURANTE a captura */
         #capture-ui {
             position: fixed;
             bottom: 0;
@@ -68,7 +60,6 @@
             flex-direction: column; 
             gap: 10px; 
         }
-        
         #capture-ui #status-text { 
             color: white; 
             background-color: rgba(0,0,0,0.6);
@@ -81,8 +72,6 @@
             margin-right: auto;
             display: none; 
         }
-
-        /* --- CSS PARA ÁREA DE REVISÃO --- */
         #review-area {
             display: none; 
             width: 90%;
@@ -111,10 +100,6 @@
             font-family: 'Inter', sans-serif;
             font-size: 0.95em;
         }
-        /* --- FIM DO NOVO CSS --- */
-
-
-        /* Estilos do Formulário (Mantidos) */
         h1 { color: #000000; text-align: center; margin-top: 0; margin-bottom: 2rem; font-weight: 700; }
         .form-group { margin-bottom: 19px; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
@@ -131,15 +116,11 @@
             margin-right: auto; 
         }
         .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
-
-        /* Estilos de mensagens de erro e modal */
         #form-result { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; text-align: center; font-weight: 500; display: none; }
         #form-result.error { background-color: #fdecea; color: var(--error-color); display: block; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background-color: var(--form-background); padding: 2.5rem 3.5rem; border-radius: 12px; text-align: center; }
         .modal-content p { margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--success-color); }
-
-        /* Preview na Etapa 2 */
         #preview-img {
             max-width: 90%; max-height: 200px; 
             border-radius: 8px; margin-bottom: 10px;
@@ -222,14 +203,12 @@
     </div>
 
     <script>
-        // Elementos Etapa 1
+        // ... (Todas as declarações de constantes, let, e a lógica de bloqueio de palavras) ...
         const initialFormContainer = document.getElementById('initial-form-container');
         const initialForm = document.getElementById('initial-form');
         const startCameraButton = document.getElementById('start-camera-button');
         const nomeInput = document.getElementById('nome');
         const telefoneInput = document.getElementById('telefone'); 
-        
-        // Elementos Etapa 2 (Captura)
         const captureUI = document.getElementById('capture-ui');
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
@@ -240,13 +219,9 @@
         const backButton = document.getElementById('back-button');
         const reviewArea = document.getElementById('review-area');
         const descricaoIaReview = document.getElementById('descricao_ia_review');
-        
-        // Elementos Etapa 3 (Envio)
         const form = document.getElementById('indication-form');
         const submitButton = document.getElementById('submit-button');
         const resultDiv = document.getElementById('form-result'); 
-        
-        // Campos Ocultos
         const latInput = document.getElementById('latitude');
         const lonInput = document.getElementById('longitude');
         const imgBase64Input = document.getElementById('imagem_base64');
@@ -263,7 +238,6 @@
         let currentLongitude = null;
         let cameraStream = null; 
 
-        // --- LÓGICA DE BLOQUEIO DE PALAVRAS ---
         const blockedWords = [
             'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido', 
             'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar', 
@@ -288,11 +262,8 @@
         descricaoIaReview.addEventListener('input', () => {
             descricaoAIInput.value = descricaoIaReview.value;
         });
-        // --- FIM LÓGICA DE BLOQUEIO E SINCRONIZAÇÃO ---
 
-
-        // --- FUNÇÕES DE CÂMERA E GPS (sem alterações) ---
-
+        // --- FUNÇÕES DE CÂMERA (Sem alteração) ---
         async function startCameraStream() {
             try {
                 cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
@@ -319,38 +290,57 @@
             }
         }
 
+        // --- FUNÇÃO DE GPS (MODIFICADA) ---
         function getGeolocation() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
                     return resolve(null);
                 }
                 
-                statusText.textContent = 'Tentando obter a localização GPS...';
+                statusText.textContent = 'Buscando sinal de GPS de alta precisão...';
                 statusText.style.display = 'block';
                 
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
+                        // SUCESSO
                         statusText.style.display = 'none'; 
                         resolve(position);
                     }, 
                     (error) => {
-                        statusText.textContent = 'GPS falhou ou negado.';
+                        // ERRO
+                        let errorMessage = 'Falha no GPS. ';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage = "GPS bloqueado. Você precisa autorizar a 'Localização Precisa' no navegador.";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage = "Sinal de GPS indisponível. Tente em um local aberto.";
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage = "Tempo limite do GPS esgotado. Sinal muito fraco.";
+                                break;
+                        }
+                        
+                        statusText.textContent = errorMessage;
                         statusText.style.display = 'block';
-                        setTimeout(() => statusText.style.display = 'none', 3000); 
+                        // Não esconde a mensagem de erro imediatamente
                         resolve(null); 
                     }, 
-                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 } // Aumentado para 5s
+                    { 
+                        enableHighAccuracy: true, // Força o uso do chip de GPS
+                        timeout: 10000, // AUMENTADO: 10 segundos de tempo limite
+                        maximumAge: 0 // Força uma nova leitura (não usa cache)
+                    } 
                 );
             });
         }
         
         // --- HANDLER: INICIAR CÂMERA (ETAPA 1 -> ETAPA 2) ---
-
+        // (Sem alterações, a validação de GPS foi movida para a Etapa 2)
         startCameraButton.addEventListener('click', async () => {
             const nomeSanitizado = nomeInput.value.replace(blockedWordsRegex, '').trim();
-            const telefone = telefoneInput.value.trim().replace(/\D/g, ''); // Remove caracteres não numéricos
+            const telefone = telefoneInput.value.trim().replace(/\D/g, ''); 
 
-            // --- VALIDAÇÃO REFORÇADA ---
             if (nomeSanitizado.length < 4) {
                  resultDiv.innerHTML = `❌ O campo Nome Completo deve ter no mínimo 4 letras.`;
                  resultDiv.style.display = 'block';
@@ -361,7 +351,6 @@
                  resultDiv.style.display = 'block';
                  return;
             }
-            // --- FIM VALIDAÇÃO REFORÇADA ---
 
             resultDiv.style.display = 'none'; 
             nomeInput.value = nomeSanitizado; 
@@ -378,12 +367,16 @@
                 
                 await startCameraStream(); 
                 
-                // Tenta pegar o GPS na Etapa 1
-                const geoPosition = await getGeolocation(); 
-                if (geoPosition) {
-                    currentLatitude = geoPosition.coords.latitude;
-                    currentLongitude = geoPosition.coords.longitude;
-                }
+                // Tentativa 1 de GPS (em paralelo)
+                getGeolocation().then(geoPosition => {
+                    if (geoPosition) {
+                        currentLatitude = geoPosition.coords.latitude;
+                        currentLongitude = geoPosition.coords.longitude;
+                        statusText.textContent = "GPS OK. Pronto para capturar.";
+                        statusText.style.display = 'block';
+                        setTimeout(() => statusText.style.display = 'none', 3000); 
+                    }
+                });
                 
                 resetCaptureButton();
 
@@ -399,6 +392,7 @@
         });
         
         // --- HANDLER: VOLTAR (ETAPA 2 -> ETAPA 1) ---
+        // (Sem alterações)
         backButton.addEventListener('click', () => {
             stopCameraStream();
             captureUI.style.display = 'none';
@@ -416,7 +410,7 @@
             resultDiv.style.display = 'none'; 
         });
 
-        // Função para redefinir o botão de captura para seu estado original
+        // --- Funções de Botão (Sem alterações) ---
         function resetCaptureButton() {
             captureRestartButton.style.display = 'block';
             captureRestartButton.disabled = false;
@@ -425,7 +419,6 @@
             captureRestartButton.addEventListener('click', startAnalysis);
         }
 
-        // Função para mudar o botão para "Reiniciar Câmera"
         function switchToRestartButton() {
             captureRestartButton.disabled = false;
             captureRestartButton.querySelector('span').textContent = '🔄 Reiniciar Câmera';
@@ -434,7 +427,6 @@
             captureRestartButton.addEventListener('click', restartCamera);
         }
 
-        // Função para reiniciar a câmera (quando o botão "Reiniciar Câmera" é clicado)
         async function restartCamera() {
             stopCameraStream(); 
             
@@ -446,14 +438,15 @@
             
             try {
                 captureRestartButton.disabled = true;
-                captureRestartButton.querySelector('span').textContent = 'Ativando a Câmera...';
+                captureRestartButton.querySelector('span').textContent = 'Ativando Câmera...';
                 await startCameraStream();
-                // Tenta pegar o GPS novamente
-                const geoPosition = await getGeolocation(); 
-                if (geoPosition) {
-                    currentLatitude = geoPosition.coords.latitude;
-                    currentLongitude = geoPosition.coords.longitude;
-                }
+                
+                getGeolocation().then(geoPosition => { // Tenta GPS novamente
+                    if (geoPosition) {
+                        currentLatitude = geoPosition.coords.latitude;
+                        currentLongitude = geoPosition.coords.longitude;
+                    }
+                });
                 resetCaptureButton(); 
             } catch (error) {
                 statusText.innerHTML = `❌ Erro ao reiniciar câmera: ${error.message}.`;
@@ -463,8 +456,8 @@
         }
 
 
-        // --- 2. INÍCIO DA CAPTURA (Função do Botão 'Capturar Imagem e Analisar Problema') ---
-
+        // --- 2. INÍCIO DA CAPTURA (MODIFICADO) ---
+        // (Validação de GPS Obrigatório)
         async function startAnalysis() {
             if (isAnalyzing) return;
             isAnalyzing = true;
@@ -482,17 +475,17 @@
                 statusText.style.display = 'block'; 
                 statusText.textContent = 'Capturando imagem...';
 
-                // --- NOVO: VERIFICAÇÃO DE GPS OBRIGATÓRIO ---
+                // --- VERIFICAÇÃO DE GPS OBRIGATÓRIO (MODIFICADO) ---
                 if (currentLatitude === null || currentLongitude === null) {
-                    // Se o GPS falhou na Etapa 1, tenta UMA VEZ MAIS.
-                    statusText.textContent = 'GPS falhou na 1ª tentativa. Tentando novamente...';
-                    const geoPosition = await getGeolocation();
+                    statusText.textContent = 'GPS não capturado. Tentando novamente (Modo Obrigatório)...';
+                    const geoPosition = await getGeolocation(); // Espera a função (await)
+                    
                     if (geoPosition) {
                         currentLatitude = geoPosition.coords.latitude;
                         currentLongitude = geoPosition.coords.longitude;
                     } else {
-                        // Se falhou de novo, bloqueia o envio.
-                        throw new Error('Não foi possível obter sua localização GPS. A indicação não pode ser enviada sem a localização. Tente reiniciar (Voltar) ou verifique as permissões do navegador.');
+                        // Se falhou DE NOVO, bloqueia o envio.
+                        throw new Error('Não foi possível obter sua localização GPS. A indicação não pode ser enviada sem a localização. Tente em um local aberto e verifique as permissões.');
                     }
                 }
                 // --- FIM DA VERIFICAÇÃO DE GPS ---
@@ -574,12 +567,12 @@
                 submitButton.style.display = 'none'; 
                 reviewArea.style.display = 'none'; 
                 
-                // Se a câmera foi parada, mas a análise falhou (ex: erro de GPS), mostre a prévia
-                if (capturedImageBase64) {
-                    previewImg.style.display = 'block';
-                } else {
-                    // Se o erro foi ANTES da captura (ex: GPS), reinicie a câmera
+                // Se o erro foi ANTES da captura (ex: GPS), reinicie a câmera
+                if (!capturedImageBase64) {
                     restartCamera(); 
+                } else {
+                    // Se o erro foi DEPOIS da captura (ex: IA), mostre a prévia
+                    previewImg.style.display = 'block';
                 }
                 
                 switchToRestartButton(); 
@@ -589,41 +582,37 @@
         }
 
 
-        // --- 3. SUBMISSÃO FINAL DO FORMULÁRIO (Para 'send-email') ---
-
+        // --- 3. SUBMISSÃO FINAL DO FORMULÁRIO (MODIFICADO) ---
+        // (Validação de GPS Obrigatório)
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             submitButton.disabled = true;
             submitButton.querySelector('span').textContent = 'Enviando e-mail...';
             
-            // O 'descricaoAIInput' já foi sincronizado pelo listener de 'input'
-            
-            const enderecoGPS = currentLatitude && currentLongitude ? 
-                `Latitude: ${currentLatitude}, Longitude: ${currentLongitude}` : 
-                'Endereço não capturado via GPS.';
-            
             // VERIFICAÇÃO FINAL (Redundante, mas segura)
-            if (!currentLatitude) {
+            if (!currentLatitude || !currentLongitude) {
                 statusText.innerHTML = `❌ Erro: O envio foi bloqueado pois a localização GPS é inválida.`;
                 statusText.style.display = 'block';
                 submitButton.disabled = false;
-                submitButton.querySelector('span').textContent = '✅ Enviar para Vereador';
+                submitButton.querySelector('span').textContent = '✅ Enviar para o Vereador';
                 return;
             }
 
+            const enderecoGPS = `Latitude: ${currentLatitude}, Longitude: ${currentLongitude}`;
+            
             const dataToSend = {
                 nome: nomeFinalInput.value, 
                 telefone: telefoneFinalInput.value, 
                 endereco: enderecoGPS, 
-                descricao: descricaoAIInput.value, // Envia o texto (editado ou não)
+                descricao: descricaoAIInput.value, 
                 imagem_base64: imgBase64Input.value, 
                 problema: problemaInput.value,
                 street_address: streetAddressInput.value,
                 street_position: streetPositionInput.value
             };
 
-            const backendUrl = 'https://indicacao-ia.vercel.app/api/send-email'; 
+            const backendUrl = '/api/send-email'; 
 
             try {
                 const response = await fetch(backendUrl, {
