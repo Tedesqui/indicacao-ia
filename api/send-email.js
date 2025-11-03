@@ -1,7 +1,7 @@
 /*
  * Ficheiro: api/send-email.js
  * ROTA: /api/send-email (POST)
- * ATUALIZADO: Removido 'street_position' do corpo do e-mail.
+ * ATUALIZADO: Recebe 'telefone' e 'endereco' manual. Remove lógica de GPS.
  */
 
 import express from 'express';
@@ -20,15 +20,14 @@ const sendEmailHandler = (req, res) => {
         return res.status(405).json({ message: 'Method Not Allowed.' });
     }
 
-    // --- Recebendo os campos (sem street_position) ---
+    // --- Recebendo os campos (com 'endereco' manual) ---
     const { 
         nome, 
         telefone, 
-        endereco, // GPS Bruto
+        endereco, // Endereço Manual
         descricao, 
         imagem_base64, 
-        problema, 
-        street_address // Nome da Rua (Estimado pela IA)
+        problema
     } = req.body; 
     
     // Configura o Nodemailer
@@ -41,19 +40,10 @@ const sendEmailHandler = (req, res) => {
     });
 
     // --- FORMATAÇÃO DO CORPO DO E-MAIL ---
-    const enderecoEstimadoTexto = street_address ?
-        `<b>${street_address}</b>` :
-        `Endereço Estimado Indisponível`;
-        
-    const coordenadasTexto = endereco ? 
-        `Latitude/Longitude: ${endereco}` :
-        `Coordenadas: Não capturadas`;
-
-    // Montagem do E-mail
     const mailOptions = {
         from: `Formulário de Indicação IA <${process.env.EMAIL_USER}>`,
         to: process.env.EMAIL_RECEIVER,
-        subject: `[INDICAÇÃO IA] ${problema || 'Nova Indicação'} - ${street_address || 'Localização Desconhecida'}`, 
+        subject: `[INDICAÇÃO IA] ${problema || 'Nova Indicação de Problema Urbano'}`, 
         html: `
             <h1>Nova Indicação Automatizada por IA</h1>
             <p><strong>Problema Identificado:</strong> ${problema || 'N/A'}</p>
@@ -63,10 +53,12 @@ const sendEmailHandler = (req, res) => {
             <p><strong>Telefone/WhatsApp:</strong> <a href="https://wa.me/55${telefone}">${telefone}</a></p>
             <hr>
             <h2>📍 Detalhes da Localização</h2>
-            <p style="margin-bottom: 5px;"><strong>Endereço Estimado (IA):</strong> ${enderecoEstimadoTexto}</p>
-            <p style="font-size: 0.9em; color: #555;">${coordenadasTexto}</p>
+            <p><strong>Endereço Informado pelo Cidadão:</strong></p>
+            <p style="font-size: 1.1em; background: #f9f9f9; border: 1px solid #ccc; padding: 10px;">
+                ${endereco.replace(/\n/g, '<br>')}
+            </p>
             <hr>
-            <p><strong>Relato Formal Gerado pela IA:</strong></p>
+            <p><strong>Relato Formal Gerado pela IA (Baseado na Imagem):</strong></p>
             <div style="border: 1px solid #ccc; padding: 15px; background: #f9f9f9; line-height: 1.5;">
                 ${descricao.replace(/\n/g, '<br>')}
             </div>
