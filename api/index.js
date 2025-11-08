@@ -1,7 +1,7 @@
 /*
- * Ficheiro: api/index.js (ou o nome do seu arquivo de servidor principal)
- * CONTÉM: ROTA DA IA (/api/analyze-problem) E ROTA DE ENVIO (/api/send-email)
- * ATUALIZADO: Inclui manipulador GET para evitar erro 404 no log.
+ * Ficheiro: api/index.js (Servidor Principal)
+ * ROTA DA IA: /api/analyze-problem (Nenhuma mudança necessária aqui)
+ * ROTA DE ENVIO: /api/send-email (Atualizada para receber GPS e Telefone)
  */
 
 const express = require('express');
@@ -11,27 +11,22 @@ const OpenAI = require('openai');
 
 const app = express();
 app.use(cors());
-
-// Aumenta o limite do body JSON para suportar a imagem base64
-app.use(express.json({ limit: '50mb' })); 
-
+app.use(express.json({ limit: '50mb' }));
 
 // Configuração da OpenAI
 const openai = new OpenAI({
-    // ATENÇÃO: A variável OPENAI_API_KEY deve ser configurada no ambiente.
     apiKey: process.env.OPENAI_API_KEY,
 });
 
 // ----------------------------------------------------------------------
 // ROTA 1: IDENTIFICAÇÃO E GERAÇÃO DE TEXTO POR IA (/api/analyze-problem)
+// (Esta rota está PERFEITA. Nenhuma alteração necessária.)
 // ----------------------------------------------------------------------
 
-// Adiciona um manipulador GET para evitar o erro 404 no log
 app.get('/api/analyze-problem', (req, res) => {
     res.status(405).json({ message: 'Method Not Allowed. Esta rota só aceita requisições POST com dados de imagem.' });
 });
 
-// Manipulador POST (A rota de análise real)
 app.post('/api/analyze-problem', async (req, res) => {
     try {
         const { image, latitude, longitude } = req.body;
@@ -40,11 +35,10 @@ app.post('/api/analyze-problem', async (req, res) => {
             return res.status(400).json({ error: 'A imagem é obrigatória para análise.' });
         }
 
-        const locationText = (latitude && longitude) 
+        const locationText = (latitude && longitude)
             ? `Localização GPS: Latitude ${latitude}, Longitude ${longitude}.`
             : `Localização GPS indisponível.`;
 
-        // Prompt de IA para Identificação, Formalização E FILTRAGEM DE CONTEÚDO
         const promptText = `
         Você é um **Assistente de Serviço Cívico e Moderador de Conteúdo**. Sua tarefa primária é analisar a imagem fornecida.
 
@@ -89,7 +83,6 @@ app.post('/api/analyze-problem', async (req, res) => {
 
     } catch (error) {
         console.error('Erro na análise da IA:', error);
-        // Retorna JSON mesmo em caso de falha do servidor para evitar erro de token 'T'
         return res.status(500).json({ error: 'Falha interna ao analisar a imagem. Verifique a chave da API.', is_inappropriate: false, problem_type: "Erro interno", formal_description: "Não foi possível gerar a descrição devido a uma falha no servidor." });
     }
 });
@@ -97,50 +90,71 @@ app.post('/api/analyze-problem', async (req, res) => {
 
 // ----------------------------------------------------------------
 // ROTA 2: ENVIO DE E-MAIL ADAPTADA (/api/send-email)
+// (MODIFICADA PARA INCLUIR GPS DE ALTA PRECISÃO)
 // ----------------------------------------------------------------
 
 app.post('/api/send-email', (req, res) => {
-    // Dados são extraídos do corpo JSON
-    const { nome, endereco, descricao, imagem_base64, problema } = req.body; 
-    
+    // --- MODIFICADO: Capturando os novos campos ---
+    const {
+        nome,
+        telefone, // <-- NOVO
+        endereco, // Endereço por extenso (automático)
+        latitude, // <-- NOVO
+        longitude, // <-- NOVO
+        descricao,
+        imagem_base64,
+        problema
+    } = req.body;
+
     // Configura o Nodemailer
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-            // ATENÇÃO: Estas variáveis devem estar configuradas no ambiente.
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         },
     });
 
-    // Montagem do E-mail
+    // --- MODIFICADO: Template de E-mail atualizado ---
+    const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    const telefoneFormatado = telefone ? `<a href="https://wa.me/55${telefone}">${telefone}</a>` : 'Não informado';
+
     const mailOptions = {
         from: `Formulário de Indicação IA <${process.env.EMAIL_USER}>`,
         to: process.env.EMAIL_RECEIVER,
-        subject: `[INDICAÇÃO IA] ${problema || 'Nova Indicação de Problema Urbano'}`, 
+        subject: `[INDICAÇÃO IA] ${problema || 'Nova Indicação de Problema Urbano'}`,
         html: `
             <h1>Nova Indicação Automatizada por IA</h1>
             <p><strong>Problema Identificado:</strong> ${problema || 'N/A'}</p>
-            <p><strong>Relato Formal Gerado pela IA:</strong></p>
-            <div style="border: 1px solid #ccc; padding: 15px; background: #f9f9f9;">
+            <hr>
+            <h2>👤 Contato do Cidadão</h2>
+            <p><strong>Nome:</strong> ${nome}</p>
+            <p><strong>Telefone/WhatsApp:</strong> ${telefoneFormatado}</p>
+            <hr>
+            <h2>📍 Detalhes da Localização (GPS de Alta Precisão)</h2>
+            <p><strong>Endereço aproximado (via Geocoding):</strong></p>
+            <p style="font-size: 1.1em; background: #f9f9ff; border: 1px solid #ccc; padding: 10px;">
+                ${endereco || 'Endereço por extenso não disponível.'}
+            </p>
+            <p><strong>Coordenadas Exatas:</strong> ${latitude}, ${longitude}</p>
+            <p><strong><a href="${googleMapsLink}" target="_blank">Ver no Google Maps</a></strong></p>
+            <hr>
+            <p><strong>Relato Formal Gerado pela IA (Baseado na Imagem e Local):</strong></p>
+            <div style="border: 1px solid #ccc; padding: 15px; background: #f9f9f9; line-height: 1.5;">
                 ${descricao.replace(/\n/g, '<br>')}
             </div>
-            <p><strong>Enviado por:</strong> ${nome}</p>
-            <p><strong>Localização (GPS):</strong> ${endereco}</p>
             <hr>
             <p>${imagem_base64 ? 'Uma imagem foi anexada para referência.' : 'Nenhuma imagem enviada.'}</p>
         `,
-        attachments: [], 
+        attachments: [],
     };
 
-    // Cria o anexo a partir da string Base64
+    // Anexo (Nenhuma mudança aqui)
     if (imagem_base64) {
-        // Remove o prefixo 'data:image/jpeg;base64,'
         const base64Data = imagem_base64.replace(/^data:image\/\w+;base64,/, "");
         const imageBuffer = Buffer.from(base64Data, 'base64');
-        
         mailOptions.attachments.push({
-            filename: `problema-urbano-${Date.now()}.jpeg`, 
+            filename: `problema-urbano-${Date.now()}.jpeg`,
             content: imageBuffer,
             contentType: 'image/jpeg',
         });
