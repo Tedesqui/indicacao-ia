@@ -1,7 +1,7 @@
 /*
  * Ficheiro: api/analyze-problem.js
  * ROTA: /api/analyze-problem (POST)
- * ATUALIZADO: Prompt da IA corrigido para NUNCA gerar saudações ou assinaturas.
+ * MODIFICADO: Para aceitar latitude e longitude do frontend.
  */
 
 import express from 'express';
@@ -25,13 +25,19 @@ const analyzeProblemHandler = async (req, res) => {
     }
     
     try {
-        const { image } = req.body; // GPS removido
+        // MODIFICADO: Recebe latitude e longitude
+        const { image, latitude, longitude } = req.body;
 
         if (!image) {
             return res.status(400).json({ error: 'A imagem é obrigatória para análise.' });
         }
 
-        // --- PROMPT ATUALIZADO (MAIS RESTRITO) ---
+        // MODIFICADO: Cria o texto de localização
+        const locationText = (latitude && longitude) 
+            ? `O problema foi relatado na seguinte localização GPS: Latitude ${latitude}, Longitude ${longitude}.`
+            : `A localização GPS não foi fornecida.`;
+
+        // --- PROMPT MODIFICADO (para incluir localização) ---
         const promptText = `
         Você é um **Assistente de Serviço Cívico e Moderador de Conteúdo**. Sua tarefa primária é analisar a imagem fornecida para identificar um problema urbano.
 
@@ -44,6 +50,7 @@ const analyzeProblemHandler = async (req, res) => {
         2.  **Identificação:** Identifique o problema principal (ex: "Buraco na pavimentação", "Poste de luz queimado", "Lixo acumulado").
         
         3.  **Geração de Texto Formal (IMPORTANTE):** Gere uma descrição detalhada e objetiva (em Português do Brasil) que descreva *apenas* o problema visto na imagem.
+            * **Inclua a localização:** Comece a descrição com a seguinte informação: "${locationText}".
             * **NÃO inclua saudações** (como 'Prezado Vereador').
             * **NÃO inclua uma assinatura** (como 'Atenciosamente' ou 'Seu Nome').
             * O texto deve ser *apenas* a descrição do problema.
@@ -53,11 +60,10 @@ const analyzeProblemHandler = async (req, res) => {
         {
           "is_inappropriate": true/false,
           "problem_type": "O problema identificado (uma frase curta)",
-          "formal_description": "A descrição pura do problema da imagem, sem saudações ou assinaturas."
+          "formal_description": "A descrição pura do problema da imagem, começando com a localização e sem saudações ou assinaturas."
         }
         `;
-        // --- FIM DO PROMPT ATUALIZADO ---
-
+        // --- FIM DO PROMPT MODIFICADO ---
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
