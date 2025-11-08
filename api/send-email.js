@@ -1,7 +1,7 @@
 /*
  * Ficheiro: api/send-email.js
  * ROTA: /api/send-email (POST)
- * ATUALIZADO: Recebe 'telefone' e 'endereco' manual. Remove lógica de GPS.
+ * ATUALIZADO: Recebe dados do GPS (lat, lon, endereço por extenso) e telefone.
  */
 
 import express from 'express';
@@ -13,21 +13,23 @@ app.use(express.json({ limit: '50mb' }));
 const sendEmailHandler = (req, res) => {
     
     if (req.method === 'GET') {
-        return res.status(405).json({ message: 'Method Not Allowed. Use POST para envio.' });
+         return res.status(405).json({ message: 'Method Not Allowed. Use POST para envio.' });
     }
     
     if (req.method !== 'POST') {
-        return res.status(405).json({ message: 'Method Not Allowed.' });
+         return res.status(405).json({ message: 'Method Not Allowed.' });
     }
 
-    // --- Recebendo os campos (com 'endereco' manual) ---
+    // --- MODIFICADO: Recebendo os novos campos do GPS e telefone ---
     const { 
         nome, 
-        telefone, 
-        endereco, // Endereço Manual
+        telefone, // <-- NOVO
+        endereco, // <-- Agora vem do GPS/Geocoder
         descricao, 
         imagem_base64, 
-        problema
+        problema,
+        latitude, // <-- NOVO
+        longitude // <-- NOVO
     } = req.body; 
     
     // Configura o Nodemailer
@@ -38,6 +40,10 @@ const sendEmailHandler = (req, res) => {
             pass: process.env.EMAIL_PASS, 
         },
     });
+
+    // --- MODIFICADO: Template de E-mail atualizado ---
+    const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+    const telefoneFormatado = telefone ? `<a href="https://wa.me/55${telefone}">${telefone}</a>` : 'Não informado';
 
     // --- FORMATAÇÃO DO CORPO DO E-MAIL ---
     const mailOptions = {
@@ -50,15 +56,17 @@ const sendEmailHandler = (req, res) => {
             <hr>
             <h2>👤 Contato do Cidadão</h2>
             <p><strong>Nome:</strong> ${nome}</p>
-            <p><strong>Telefone/WhatsApp:</strong> <a href="https://wa.me/55${telefone}">${telefone}</a></p>
+            <p><strong>Telefone/WhatsApp:</strong> ${telefoneFormatado}</p>
             <hr>
-            <h2>📍 Detalhes da Localização</h2>
-            <p><strong>Endereço Informado pelo Cidadão:</strong></p>
-            <p style="font-size: 1.1em; background: #f9f9f9; border: 1px solid #ccc; padding: 10px;">
-                ${endereco.replace(/\n/g, '<br>')}
+            <h2>📍 Detalhes da Localização (GPS de Alta Precisão)</h2>
+            <p><strong>Endereço aproximado (via Geocoding):</strong></p>
+            <p style="font-size: 1.1em; background: #f9f9ff; border: 1px solid #ccc; padding: 10px;">
+                ${endereco || 'Endereço por extenso não disponível.'}
             </p>
+            <p><strong>Coordenadas Exatas:</strong> ${latitude}, ${longitude}</p>
+            <p><strong><a href="${googleMapsLink}" target="_blank">Ver no Google Maps</a></strong></p>
             <hr>
-            <p><strong>Relato Formal Gerado pela IA (Baseado na Imagem):</strong></p>
+            <p><strong>Relato Formal Gerado pela IA (Baseado na Imagem e Local):</strong></p>
             <div style="border: 1px solid #ccc; padding: 15px; background: #f9f9f9; line-height: 1.5;">
                 ${descricao.replace(/\n/g, '<br>')}
             </div>
@@ -68,7 +76,7 @@ const sendEmailHandler = (req, res) => {
         attachments: [], 
     };
 
-    // Cria o anexo a partir da string Base64
+    // Cria o anexo a partir da string Base64 (Sem alteração)
     if (imagem_base64) {
         const base64Data = imagem_base64.replace(/^data:image\/\w+;base64,/, "");
         const imageBuffer = Buffer.from(base64Data, 'base64');
