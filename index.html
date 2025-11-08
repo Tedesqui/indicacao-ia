@@ -28,13 +28,10 @@
             min-height: 100vh;
             overflow: hidden; 
         }
-        /* Configuração de Câmera e Canvas */
         video, canvas {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1;
             display: none; 
         }
-
-        /* Container Inicial Fixado no Topo */
         #initial-form-container {
             position: fixed;
             top: 10px; 
@@ -51,8 +48,6 @@
             display: flex; 
             flex-direction: column; 
         }
-        
-        /* Container de controle que aparecerá DURANTE a captura */
         #capture-ui {
             position: fixed;
             bottom: 0;
@@ -68,7 +63,6 @@
             flex-direction: column; 
             gap: 10px; 
         }
-        
         #capture-ui #status-text { 
             color: white; 
             background-color: rgba(0,0,0,0.6);
@@ -81,8 +75,6 @@
             margin-right: auto;
             display: none; 
         }
-
-        /* --- CSS PARA ÁREA DE REVISÃO --- */
         #review-area {
             display: none; 
             width: 90%;
@@ -111,17 +103,27 @@
             font-family: 'Inter', sans-serif;
             font-size: 0.95em;
         }
-        /* --- FIM DO NOVO CSS --- */
-
-
-        /* Estilos do Formulário (Mantidos) */
         h1 { color: #000000; text-align: center; margin-top: 0; margin-bottom: 2rem; font-weight: 700; }
         .form-group { margin-bottom: 19px; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
-        input[type="text"], input[type="tel"], textarea { /* Adicionado textarea */
+        input[type="text"], input[type="tel"], textarea {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
+        
+        /* NOVO: Estilo para o display de endereço automático */
+        #endereco-automatico-display {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            background-color: #f0f0f0; /* Cinza claro, indicando "buscando" */
+            color: #555;
+            min-height: 50px;
+        }
+        
         textarea {
             font-family: 'Inter', sans-serif;
             resize: vertical;
@@ -135,15 +137,11 @@
             margin-right: auto; 
         }
         .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
-
-        /* Estilos de mensagens de erro e modal */
         #form-result { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; text-align: center; font-weight: 500; display: none; }
         #form-result.error { background-color: #fdecea; color: var(--error-color); display: block; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background-color: var(--form-background); padding: 2.5rem 3.5rem; border-radius: 12px; text-align: center; }
         .modal-content p { margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--success-color); }
-
-        /* Preview na Etapa 2 */
         #preview-img {
             max-width: 90%; max-height: 200px; 
             border-radius: 8px; margin-bottom: 10px;
@@ -172,12 +170,13 @@
             </div>
 
             <div class="form-group">
-                <label for="endereco">Endereço do Problema</label>
-                <textarea id="endereco" name="endereco" required placeholder="Rua, Número, Bairro, Ponto de Referência..." rows="3"></textarea>
+                <label for="endereco-automatico-display">Endereço do Problema (via GPS)</label>
+                <div id="endereco-automatico-display">
+                    Buscando localização de alta precisão...
+                </div>
             </div>
             
-            <button type="button" class="submit-btn" id="start-camera-button">
-                <span>▶️ Iniciar Câmera</span>
+            <button type="button" class="submit-btn" id="start-camera-button" disabled> <span>Aguardando GPS...</span>
             </button>
         </form>
         <div id="form-result"></div>
@@ -185,9 +184,7 @@
     
     <div id="capture-ui">
         <img id="preview-img" alt="Pré-visualização do problema" />
-
         <div id="status-text" style="display: none;"></div> 
-        
         <div id="review-area">
             <label for="descricao_ia_review">Texto a ser enviado (gerado por IA):</label>
             <textarea id="descricao_ia_review" rows="6"></textarea>
@@ -200,22 +197,22 @@
             
             <input type="hidden" id="nome_final" name="nome_final"> 
             <input type="hidden" id="telefone_final" name="telefone_final"> 
+            
             <input type="hidden" id="endereco_final" name="endereco_final"> 
+            <input type="hidden" id="latitude_final" name="latitude_final">
+            <input type="hidden" id="longitude_final" name="longitude_final">
 
             
             <button type="button" class="submit-btn" id="capture-restart-button" style="margin-top: 15px; margin-bottom: 20px;">
                 <span>📸 Capturar Imagem e Analisar Problema</span>
             </button>
-            
-            
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
                 <span>✅ Enviar para o Vereador</span>
             </button>
         </form>
         
-        
         <button type="button" id="back-button" style="background: none; border: none; color: white; margin-top: 10px; font-size: 0.9rem; text-decoration: underline;">
-             Voltar ao Formulário
+            Voltar ao Formulário
         </button>
     </div>
 
@@ -232,7 +229,7 @@
         const startCameraButton = document.getElementById('start-camera-button');
         const nomeInput = document.getElementById('nome');
         const telefoneInput = document.getElementById('telefone'); 
-        const enderecoInput = document.getElementById('endereco'); // NOVO
+        const enderecoDisplay = document.getElementById('endereco-automatico-display'); 
         
         // Elementos Etapa 2 (Captura)
         const captureUI = document.getElementById('capture-ui');
@@ -257,14 +254,15 @@
         const descricaoAIInput = document.getElementById('descricao_ai');
         const nomeFinalInput = document.getElementById('nome_final');
         const telefoneFinalInput = document.getElementById('telefone_final'); 
-        const enderecoFinalInput = document.getElementById('endereco_final'); // NOVO
-
+        const enderecoFinalInput = document.getElementById('endereco_final');
+        const latitudeFinalInput = document.getElementById('latitude_final');
+        const longitudeFinalInput = document.getElementById('longitude_final');
 
         let isAnalyzing = false;
         let capturedImageBase64 = null;
         let cameraStream = null; 
 
-        // --- LÓGICA DE BLOQUEIO DE PALAVRAS ---
+        // --- LÓGICA DE BLOQUEIO DE PALAVRAS (Sem alteração) ---
         const blockedWords = [
             'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido', 
             'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar', 
@@ -277,7 +275,6 @@
             const input = event.target;
             const originalValue = input.value;
             const sanitizedValue = originalValue.replace(blockedWordsRegex, ''); 
-
             if (originalValue !== sanitizedValue) {
                 const cursorPosition = input.selectionStart - (originalValue.length - sanitizedValue.length);
                 input.value = sanitizedValue;
@@ -285,13 +282,9 @@
             }
         }
         nomeInput.addEventListener('input', sanitizeInput);
-        enderecoInput.addEventListener('input', sanitizeInput); // Aplica nos endereços também
-        
         descricaoIaReview.addEventListener('input', () => {
             descricaoAIInput.value = descricaoIaReview.value.replace(blockedWordsRegex, '');
         });
-        // --- FIM LÓGICA DE BLOQUEIO E SINCRONIZAÇÃO ---
-
 
         // --- FUNÇÕES DE CÂMERA (Sem alteração) ---
         async function startCameraStream() {
@@ -320,31 +313,59 @@
             }
         }
         
-        // --- FUNÇÃO GPS REMOVIDA ---
+        // ## NOVO ##: A "PONTE" QUE RECEBE DADOS DO ANDROID
+        // Esta função será chamada pelo código NATIVO (Java/Kotlin)
+        function receiveLocationFromAndroid(latitude, longitude, streetAddress) {
+            console.log("Localização recebida do Android:", latitude, longitude, streetAddress);
+
+            if (streetAddress) {
+                enderecoDisplay.textContent = streetAddress;
+                enderecoDisplay.style.color = 'var(--text-color)';
+            } else {
+                enderecoDisplay.textContent = 'Não foi possível obter o nome da rua. Apenas coordenadas GPS serão salvas.';
+                enderecoDisplay.style.color = 'var(--error-color)';
+            }
+
+            // Preenche os campos ocultos que serão enviados
+            latitudeFinalInput.value = latitude;
+            longitudeFinalInput.value = longitude;
+            enderecoFinalInput.value = streetAddress || `Coords: ${latitude}, ${longitude}`;
+
+            // Habilita o botão para o usuário
+            startCameraButton.disabled = false;
+            startCameraButton.querySelector('span').textContent = '▶️ Iniciar Câmera';
+        }
         
-        
+        // Função chamada se o Android falhar em obter o GPS
+        function onLocationError(errorMessage) {
+            enderecoDisplay.textContent = `Falha no GPS: ${errorMessage}`;
+            enderecoDisplay.style.color = 'var(--error-color)';
+            startCameraButton.disabled = true;
+            startCameraButton.querySelector('span').textContent = 'Erro no GPS';
+        }
+
         // --- HANDLER: INICIAR CÂMERA (ETAPA 1 -> ETAPA 2) ---
-        // (REMOVIDO GPS, ADICIONADO ENDEREÇO MANUAL)
         startCameraButton.addEventListener('click', async () => {
             const nomeSanitizado = nomeInput.value.replace(blockedWordsRegex, '').trim();
             const telefone = telefoneInput.value.trim().replace(/\D/g, ''); 
-            const endereco = enderecoInput.value.replace(blockedWordsRegex, '').trim(); // NOVO
+            const lat = latitudeFinalInput.value;
+            const lon = longitudeFinalInput.value;
 
             // --- VALIDAÇÃO REFORÇADA ---
             if (nomeSanitizado.length < 4) {
-                 resultDiv.innerHTML = `❌ O campo Nome Completo deve ter no mínimo 4 letras.`;
-                 resultDiv.style.display = 'block';
-                 return;
+                    resultDiv.innerHTML = `❌ O campo Nome Completo deve ter no mínimo 4 letras.`;
+                    resultDiv.style.display = 'block';
+                    return;
             }
             if (telefone.length < 8) { 
-                 resultDiv.innerHTML = `❌ O campo Telefone/WhatsApp deve ter no mínimo 8 dígitos.`;
-                 resultDiv.style.display = 'block';
-                 return;
+                    resultDiv.innerHTML = `❌ O campo Telefone/WhatsApp deve ter no mínimo 8 dígitos.`;
+                    resultDiv.style.display = 'block';
+                    return;
             }
-            if (endereco.length < 10) { // NOVO
-                 resultDiv.innerHTML = `❌ O campo Endereço deve ser preenchido (mínimo 10 caracteres).`;
-                 resultDiv.style.display = 'block';
-                 return;
+            if (!lat || !lon) { 
+                    resultDiv.innerHTML = `❌ Erro: Localização GPS não foi obtida. Tente reiniciar o app.`;
+                    resultDiv.style.display = 'block';
+                    return;
             }
             // --- FIM VALIDAÇÃO REFORÇADA ---
 
@@ -352,8 +373,7 @@
             nomeInput.value = nomeSanitizado; 
             
             nomeFinalInput.value = nomeSanitizado;
-            telefoneFinalInput.value = telefone;
-            enderecoFinalInput.value = endereco; // NOVO
+            telefoneFinalInput.value = telefone; // <-- CAMPO DE TELEFONE ADICIONADO
 
             try {
                 startCameraButton.disabled = true;
@@ -363,7 +383,6 @@
                 captureUI.style.display = 'flex'; 
                 
                 await startCameraStream(); 
-                
                 resetCaptureButton();
 
             } catch (error) {
@@ -371,9 +390,6 @@
                 captureUI.style.display = 'none';
                 resultDiv.innerHTML = `❌ Erro na Câmera: ${error.message}.`;
                 resultDiv.style.display = 'block';
-            } finally {
-                startCameraButton.disabled = false;
-                startCameraButton.querySelector('span').textContent = '▶️ Iniciar Câmera'; // Removido "e GPS"
             }
         });
         
@@ -385,10 +401,22 @@
             
             nomeFinalInput.value = '';
             telefoneFinalInput.value = '';
-            enderecoFinalInput.value = ''; // NOVO
+            enderecoFinalInput.value = '';
+            latitudeFinalInput.value = '';
+            longitudeFinalInput.value = '';
+            
+            startCameraButton.disabled = true;
+            startCameraButton.querySelector('span').textContent = 'Aguardando GPS...';
+            enderecoDisplay.textContent = 'Buscando localização de alta precisão...';
+            enderecoDisplay.style.color = '#555';
+            
+            // ## NOVO ##: Pede ao Android para buscar o GPS novamente
+            if (window.Android && typeof window.Android.requestLocationUpdate === 'function') {
+                window.Android.requestLocationUpdate();
+            }
+
             reviewArea.style.display = 'none'; 
             descricaoIaReview.value = ''; 
-
             submitButton.style.display = 'none';
             resetCaptureButton();
             previewImg.style.display = 'none';
@@ -404,7 +432,6 @@
             captureRestartButton.removeEventListener('click', restartCamera);
             captureRestartButton.addEventListener('click', startAnalysis);
         }
-
         function switchToRestartButton() {
             captureRestartButton.disabled = false;
             captureRestartButton.querySelector('span').textContent = '🔄 Reiniciar Câmera';
@@ -412,16 +439,13 @@
             captureRestartButton.removeEventListener('click', startAnalysis);
             captureRestartButton.addEventListener('click', restartCamera);
         }
-
         async function restartCamera() {
             stopCameraStream(); 
-            
             statusText.style.display = 'none';
             submitButton.style.display = 'none';
             previewImg.style.display = 'none';
             reviewArea.style.display = 'none'; 
             descricaoIaReview.value = ''; 
-            
             try {
                 captureRestartButton.disabled = true;
                 captureRestartButton.querySelector('span').textContent = 'Ativando a Câmera...';
@@ -434,18 +458,16 @@
             }
         }
 
-
         // --- 2. INÍCIO DA CAPTURA (MODIFICADO) ---
-        // (REMOVIDO GPS)
         async function startAnalysis() {
             if (isAnalyzing) return;
             isAnalyzing = true;
             
-            if (!nomeFinalInput.value.trim() || !telefoneFinalInput.value.trim() || !enderecoFinalInput.value.trim()) {
-                 statusText.innerHTML = `❌ Erro: Por favor, volte e preencha todos os campos.`;
-                 statusText.style.display = 'block';
-                 isAnalyzing = false;
-                 return;
+            if (!nomeFinalInput.value.trim() || !telefoneFinalInput.value.trim() || !latitudeFinalInput.value.trim()) {
+                    statusText.innerHTML = `❌ Erro: Dados de usuário ou GPS ausentes. Por favor, volte e tente novamente.`;
+                    statusText.style.display = 'block';
+                    isAnalyzing = false;
+                    return;
             }
             
             try {
@@ -454,10 +476,7 @@
                 statusText.style.display = 'block'; 
                 statusText.textContent = 'Capturando imagem...';
 
-                // --- GPS REMOVIDO ---
-                
                 // 1. Capturar Imagem
-                statusText.textContent = 'Capturando imagem...';
                 const MAX_WIDTH = 1024;
                 const scale = MAX_WIDTH / video.videoWidth;
                 canvas.width = MAX_WIDTH;
@@ -465,14 +484,11 @@
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.6); 
 
-                // Parar a câmera e exibir a pré-visualização
                 stopCameraStream();
-                
                 previewImg.src = capturedImageBase64;
                 previewImg.style.display = 'block';
                 
-                
-                // 3. Chamar a API de IA para Análise (SEM GPS)
+                // 3. Chamar a API de IA para Análise (AGORA COM GPS)
                 statusText.textContent = 'Analisando imagem e gerando texto...';
                 captureRestartButton.querySelector('span').textContent = 'Analisando com IA...';
                 
@@ -480,43 +496,35 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        image: capturedImageBase64
-                        // latitude e longitude removidos
+                        image: capturedImageBase64,
+                        latitude: latitudeFinalInput.value,
+                        longitude: longitudeFinalInput.value
                     }),
                 });
                 
                 const analysisResult = await analysisResponse.json();
-
                 if (!analysisResponse.ok || analysisResult.error) {
                     throw new Error(analysisResult.error || 'Falha na análise da IA.');
                 }
                 
-                // --- VERIFICAÇÃO DE SEGURANÇA E CONTEÚDO ---
-                
                 if (analysisResult.is_inappropriate === true) {
                     throw new Error('Conteúdo da imagem sinalizado como impróprio. O envio foi bloqueado!');
                 }
-                
                 const problemTypeClean = analysisResult.problem_type.toLowerCase();
                 if (problemTypeClean.includes("nenhum problema") || problemTypeClean.includes("n/a") || problemTypeClean.includes("não detectado")) {
-                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema público (buraco na rua, poste sem luz, etc.).');
+                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema público.');
                 }
                 
                 // 4. Preencher campos ocultos e preparar para o envio
                 const sanitizedDescription = analysisResult.formal_description.replace(blockedWordsRegex, '');
-                
                 problemaInput.value = analysisResult.problem_type.replace(blockedWordsRegex, ''); 
-                descricaoAIInput.value = sanitizedDescription; // Campo oculto
+                descricaoAIInput.value = sanitizedDescription;
                 imgBase64Input.value = capturedImageBase64; 
+                descricaoIaReview.value = sanitizedDescription;
+                reviewArea.style.display = 'block';
 
-                // --- MOSTRAR O TEXTO PARA O USUÁRIO ---
-                descricaoIaReview.value = sanitizedDescription; // Campo visível
-                reviewArea.style.display = 'block'; // Mostra a área de revisão
-
-
-                // 5. Mudar a interface para o modo de Revisão/Envio
+                // 5. Mudar a interface
                 statusText.innerHTML = `✅ **Problema:** ${problemaInput.value}. Revise o texto abaixo e clique em 'Enviar'.`;
-                
                 submitButton.style.display = 'block'; 
                 switchToRestartButton(); 
 
@@ -525,19 +533,16 @@
                 statusText.style.display = 'block';
                 submitButton.style.display = 'none'; 
                 reviewArea.style.display = 'none'; 
-                
                 if (!capturedImageBase64) {
                     restartCamera(); 
                 } else {
                     previewImg.style.display = 'block';
                 }
-                
                 switchToRestartButton(); 
             } finally {
                 isAnalyzing = false;
             }
         }
-
 
         // --- 3. SUBMISSÃO FINAL DO FORMULÁRIO (MODIFICADO) ---
         form.addEventListener('submit', async (e) => {
@@ -546,14 +551,16 @@
             submitButton.disabled = true;
             submitButton.querySelector('span').textContent = 'Enviando e-mail...';
             
+            // ## MODIFICADO ##: Enviando todos os dados
             const dataToSend = {
                 nome: nomeFinalInput.value, 
                 telefone: telefoneFinalInput.value, 
-                endereco: enderecoFinalInput.value, // Envia o endereço manual
+                endereco: enderecoFinalInput.value, 
                 descricao: descricaoAIInput.value, 
                 imagem_base64: imgBase64Input.value, 
-                problema: problemaInput.value
-                // GPS e street_address removidos
+                problema: problemaInput.value,
+                latitude: latitudeFinalInput.value,
+                longitude: longitudeFinalInput.value
             };
 
             const backendUrl = '/api/send-email'; 
@@ -566,26 +573,16 @@
                 });
                 
                 const result = await response.json();
-
                 if (!response.ok) {
                     throw new Error(result.message || 'Ocorreu um erro no servidor.');
                 }
 
-                document.getElementById('success-message').textContent = "Indicação enviada com sucesso! O vereador receberá sua solicitação formatada pela IA.";
+                document.getElementById('success-message').textContent = "Indicação enviada com sucesso!";
                 document.getElementById('success-modal').style.display = 'flex';
                 
-                // Reinicia a interface para a Etapa 1
+                // Reinicia para a Etapa 1
                 initialForm.reset();
-                captureUI.style.display = 'none';
-                initialFormContainer.style.display = 'flex';
-                
-                // Limpa o estado da Etapa 2
-                submitButton.style.display = 'none';
-                resetCaptureButton(); 
-                previewImg.style.display = 'none';
-                statusText.style.display = 'none';
-                reviewArea.style.display = 'none';
-                descricaoIaReview.value = '';
+                backButton.click(); // Simula o clique no botão 'voltar' para resetar tudo
                 
                 setTimeout(() => {
                     document.getElementById('success-modal').style.display = 'none';
@@ -594,17 +591,15 @@
             } catch (error) {
                 statusText.innerHTML = `❌ Erro ao enviar: ${error.message}.`;
                 statusText.style.display = 'block';
-                submitButton.disabled = false;
-                submitButton.querySelector('span').textContent = '✅ Enviar para o Vereador';
             } finally {
-                // ...
+                 submitButton.disabled = false;
+                 submitButton.querySelector('span').textContent = '✅ Enviar para o Vereador';
             }
         });
 
         // --- 4. INICIALIZAÇÃO ---
         captureRestartButton.addEventListener('click', startAnalysis);
         initialFormContainer.style.display = 'flex';
-        
     </script>
 </body>
 </html>
