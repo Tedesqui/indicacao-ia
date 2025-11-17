@@ -137,7 +137,9 @@
             margin-right: auto; 
         }
         .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
-        #form-result { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; text-align: center; font-weight: 500; display: none; }
+        #form-result { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; text-align: center; font-weight: 500; display: none;  /* LINHAS ADICIONADAS PARA SUBIR 25px */
+            position: relative;
+            bottom: 25px; }
         #form-result.error { background-color: #fdecea; color: var(--error-color); display: block; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background-color: var(--form-background); padding: 2.5rem 3.5rem; border-radius: 12px; text-align: center; }
@@ -605,5 +607,6 @@
     </script>
 </body>
 </html>
+
 
 
