@@ -492,7 +492,8 @@
                 statusText.textContent = 'Analisando imagem e gerando texto...';
                 captureRestartButton.querySelector('span').textContent = 'Analisando com IA...';
                 
-                const analysisResponse = await fetch('/api/analyze-problem', { 
+                // ## ATENÇÃO ##: MUDE O 'SEU_IP_AQUI' E A PORTA
+                const analysisResponse = await fetch('http://SEU_IP_AQUI:3000/api/analyze-problem', { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -563,7 +564,8 @@
                 longitude: longitudeFinalInput.value
             };
 
-            const backendUrl = '/api/send-email'; 
+            // ## ATENÇÃO ##: MUDE O 'SEU_IP_AQUI' E A PORTA
+            const backendUrl = 'http://SEU_IP_AQUI:3000/api/send-email'; 
 
             try {
                 const response = await fetch(backendUrl, {
