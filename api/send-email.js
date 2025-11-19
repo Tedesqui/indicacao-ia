@@ -1,6 +1,6 @@
 /*
  * Ficheiro: api/send-email.js
- * CORREÇÃO: Adicionado suporte para requisição OPTIONS (CORS)
+ * CORREÇÃO: Texto do endereço alterado para "Endereço do Problema"
  */
 
 import express from 'express';
@@ -13,7 +13,7 @@ app.use(express.json({ limit: '50mb' }));
 
 const sendEmailHandler = (req, res) => {
     
-    // ## CORREÇÃO CRÍTICA: Aceitar o "aperto de mão" do Android ##
+    // Aceita o "aperto de mão" do Android (CORS)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -61,7 +61,9 @@ const sendEmailHandler = (req, res) => {
             <p><strong>Telefone/WhatsApp:</strong> ${telefoneFormatado}</p>
             <hr>
             <h2>📍 Detalhes da Localização (GPS de Alta Precisão)</h2>
-            <p><strong>Endereço aproximado (via Geocoding):</strong></p>
+            
+            <p><strong>Endereço do Problema:</strong></p>
+            
             <p style="font-size: 1.1em; background: #f9f9ff; border: 1px solid #ccc; padding: 10px;">
                 ${endereco || 'Endereço por extenso não disponível.'}
             </p>
