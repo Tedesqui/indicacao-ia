@@ -286,7 +286,7 @@
                 <span>📸 Capturar Imagem e Analisar Problema</span>
             </button>
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
-                <span>✅ Enviar para o Vereador</span>
+                <span>✅ Enviar para a Prefeitura</span>
             </button>
         </form>
         
@@ -770,7 +770,7 @@
                 statusText.style.display = 'block';
             } finally {
                  submitButton.disabled = false;
-                 submitButton.querySelector('span').textContent = '✅ Enviar para o Vereador';
+                 submitButton.querySelector('span').textContent = '✅ Enviar para a Prefeitura';
             }
         });
 
