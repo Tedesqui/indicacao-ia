@@ -1,173 +1,632 @@
-/*
- * Ficheiro: api/index.js (Servidor Principal)
- * ROTA DA IA: /api/analyze-problem (Nenhuma mudança necessária aqui)
- * ROTA DE ENVIO: /api/send-email (Atualizada para receber GPS e Telefone)
- */
-
-const express = require('express');
-const nodemailer = require('nodemailer');
-const cors = require('cors');
-const OpenAI = require('openai');
-
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-
-// Configuração da OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
-// ----------------------------------------------------------------------
-// ROTA 1: IDENTIFICAÇÃO E GERAÇÃO DE TEXTO POR IA (/api/analyze-problem)
-// (Esta rota está PERFEITA. Nenhuma alteração necessária.)
-// ----------------------------------------------------------------------
-
-app.get('/api/analyze-problem', (req, res) => {
-    res.status(405).json({ message: 'Method Not Allowed. Esta rota só aceita requisições POST com dados de imagem.' });
-});
-
-app.post('/api/analyze-problem', async (req, res) => {
-    try {
-        const { image, latitude, longitude } = req.body;
-
-        if (!image) {
-            return res.status(400).json({ error: 'A imagem é obrigatória para análise.' });
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registre um pedido e nos envie (Automatizado por IA)!!!</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007BFF;
+            --primary-hover: #0056b3;
+            --background-color: #f4f7f9;
+            --form-background: #ffffff;
+            --text-color: #333;
+            --label-color: #555;
+            --border-color: #ccc;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow: hidden; 
+        }
+        video, canvas {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1;
+            display: none; 
+        }
+        #initial-form-container {
+            position: fixed;
+            top: -20px; 
+            left: 50%;
+            transform: translateX(-50%); 
+            background-color: var(--form-background);
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 650px;
+            box-sizing: border-box;
+            z-index: 10;
+            display: flex; 
+            flex-direction: column; 
+        }
+        #capture-ui {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 1rem 1rem 1.5rem 1rem; 
+            background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.6), transparent); 
+            color: white;
+            text-align: center;
+            z-index: 5; 
+            box-sizing: border-box;
+            display: none; 
+            flex-direction: column; 
+            gap: 10px; 
+        }
+        #capture-ui #status-text { 
+            color: white; 
+            background-color: rgba(0,0,0,0.6);
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin-bottom: 5px; 
+            font-size: 0.9em;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+            display: none; 
+        }
+        #review-area {
+            display: none; 
+            width: 90%;
+            max-width: 400px;
+            margin: 5px auto 10px auto;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        #review-area label {
+            font-weight: 600;
+            font-size: 0.9em;
+            color: white;
+            margin-bottom: 5px;
+            display: block;
+        }
+        #review-area textarea {
+            width: 100%;
+            box-sizing: border-box;
+            background: #f9f9f9;
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95em;
+        }
+        h1 { color: #000000; text-align: center; margin-top: 0; margin-bottom: 2rem; font-weight: 700; }
+        .form-group { margin-bottom: 19px; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
+        input[type="text"], input[type="tel"], textarea {
+            width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
+            border-radius: 8px; box-sizing: border-box; font-size: 1rem;
+        }
+        
+        #endereco-automatico-display {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            background-color: #f0f0f0; 
+            color: #555;
+            min-height: 50px;
+        }
+        
+        textarea {
+            font-family: 'Inter', sans-serif;
+            resize: vertical;
+        }
+        .submit-btn {
+            background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
+            color: white; padding: 1rem 1.5rem; border: none; border-radius: 8px;
+            cursor: pointer; width: 100%; max-width: 400px; 
+            font-size: 1.1rem; font-weight: 600;
+            margin-left: auto; 
+            margin-right: auto; 
+        }
+        .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
+        
+        #form-result { 
+            margin-top: 1.5rem; 
+            padding: 1rem; 
+            border-radius: 8px; 
+            text-align: center; 
+            font-weight: 500; 
+            display: none; 
+        }
+        #form-result.error { background-color: #fdecea; color: var(--error-color); display: block; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background-color: var(--form-background); padding: 2.5rem 3.5rem; border-radius: 12px; text-align: center; }
+        .modal-content p { margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--success-color); }
+        #preview-img {
+            max-width: 90%; max-height: 200px; 
+            border-radius: 8px; margin-bottom: 10px;
+            border: 2px solid white; display: none; 
+            margin-left: auto; margin-right: auto;
+            object-fit: contain; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        
+        /* --- CSS DO MICROFONE --- */
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
         }
 
-        const locationText = (latitude && longitude)
-            ? `Localização GPS: Latitude ${latitude}, Longitude ${longitude}.`
-            : `Localização GPS indisponível.`;
-
-        const promptText = `
-        Você é um **Assistente de Serviço Cívico e Moderador de Conteúdo**. Sua tarefa primária é analisar a imagem fornecida.
-
-        REGRAS DE FILTRAGEM DE SEGURANÇA (MUITO IMPORTANTES):
-        1.  Se a imagem contiver nudez explícita, partes íntimas, ou conteúdo sexualmente sugestivo, você DEVE parar imediatamente a análise e definir "is_inappropriate" como true.
-        2.  Se a imagem não for de um problema urbano identificável (ex: é uma selfie, uma paisagem que não tem nada de errado), defina "is_inappropriate" como false e "problem_type" como "Nenhum problema urbano detectado."
-
-        Se o conteúdo for APROPRIADO e for um PROBLEMA URBANO:
-        1.  Defina "is_inappropriate" como false.
-        2.  **Identificação:** Identifique o problema principal (ex: "Buraco na pavimentação", "Poste de luz queimado", "Lixo acumulado").
-        3.  **Geração de Texto Formal:** Gere uma descrição detalhada e formal (em Português do Brasil) em formato de corpo de e-mail. Use um tom respeitoso e solicite uma providência.
-        4.  **Localização:** Inclua a seguinte informação de localização no início da descrição gerada: "${locationText}".
-
-        O Formato de Saída DEVE ser um único objeto JSON, contendo SEMPRE os três campos, mesmo em caso de erro de detecção ou filtragem:
-
-        {
-          "is_inappropriate": true/false,
-          "problem_type": "O problema identificado (uma frase curta)",
-          "formal_description": "O corpo completo da reclamação formal com a localização (ou uma mensagem de erro se imprópria)."
+        .mic-btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            opacity: 0.7;
+            z-index: 5;
+            transition: transform 0.1s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px; 
+            height: 45px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
-        `;
+        .mic-btn img {
+            width: 100%; 
+            height: 100%;
+            object-fit: contain;
+            transition: filter 0.1s ease-out;
+            pointer-events: none; 
+        }
+        .mic-btn:hover {
+            opacity: 1;
+        }
+        
+        .mic-btn:active {
+             transform: translateY(-50%) scale(2.0);
+             opacity: 1;
+        }
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            response_format: { type: "json_object" },
-            messages: [
-                {
-                    role: "user",
-                    content: [
-                        { type: "text", text: promptText },
-                        { type: "image_url", image_url: { "url": image } },
-                    ],
-                },
-            ],
-            max_tokens: 1500,
-        });
+        .mic-btn.is-listening img {
+             filter: invert(50%) sepia(100%) saturate(500%) hue-rotate(180deg) brightness(100%);
+        }
 
-        const aiResultString = completion.choices[0].message.content;
-        const parsedResult = JSON.parse(aiResultString);
+        .form-group-with-mic input[type="text"],
+        .form-group-with-mic input[type="tel"] {
+            padding-right: 55px;
+        }
+        /* --- FIM DO CSS DO MICROFONE --- */
 
-        return res.status(200).json(parsedResult);
+    </style>
+</head>
+<body>
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
 
-    } catch (error) {
-        console.error('Erro na análise da IA:', error);
-        return res.status(500).json({ error: 'Falha interna ao analisar a imagem. Verifique a chave da API.', is_inappropriate: false, problem_type: "Erro interno", formal_description: "Não foi possível gerar a descrição devido a uma falha no servidor." });
-    }
-});
-
-
-// ----------------------------------------------------------------
-// ROTA 2: ENVIO DE E-MAIL ADAPTADA (/api/send-email)
-// (MODIFICADA PARA INCLUIR GPS DE ALTA PRECISÃO)
-// ----------------------------------------------------------------
-
-app.post('/api/send-email', (req, res) => {
-    // --- MODIFICADO: Capturando os novos campos ---
-    const {
-        nome,
-        telefone, // <-- NOVO
-        endereco, // Endereço por extenso (automático)
-        latitude, // <-- NOVO
-        longitude, // <-- NOVO
-        descricao,
-        imagem_base64,
-        problema
-    } = req.body;
-
-    // Configura o Nodemailer
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
-        },
-    });
-
-    // --- MODIFICADO: Template de E-mail atualizado ---
-    const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
-    const telefoneFormatado = telefone ? `<a href="https://wa.me/55${telefone}">${telefone}</a>` : 'Não informado';
-
-    const mailOptions = {
-        from: `Formulário de Indicação IA <${process.env.EMAIL_USER}>`,
-        to: process.env.EMAIL_RECEIVER,
-        subject: `[INDICAÇÃO IA] ${problema || 'Nova Indicação de Problema Urbano'}`,
-        html: `
-            <h1>Nova Indicação Automatizada por IA</h1>
-            <p><strong>Problema Identificado:</strong> ${problema || 'N/A'}</p>
-            <hr>
-            <h2>👤 Contato do Cidadão</h2>
-            <p><strong>Nome:</strong> ${nome}</p>
-            <p><strong>Telefone/WhatsApp:</strong> ${telefoneFormatado}</p>
-            <hr>
-            <h2>📍 Detalhes da Localização (GPS de Alta Precisão)</h2>
-            <p><strong>Endereço aproximado (via Geocoding):</strong></p>
-            <p style="font-size: 1.1em; background: #f9f9ff; border: 1px solid #ccc; padding: 10px;">
-                ${endereco || 'Endereço por extenso não disponível.'}
-            </p>
-            <p><strong>Coordenadas Exatas:</strong> ${latitude}, ${longitude}</p>
-            <p><strong><a href="${googleMapsLink}" target="_blank">Ver no Google Maps</a></strong></p>
-            <hr>
-            <p><strong>Relato Formal Gerado pela IA (Baseado na Imagem e Local):</strong></p>
-            <div style="border: 1px solid #ccc; padding: 15px; background: #f9f9f9; line-height: 1.5;">
-                ${descricao.replace(/\n/g, '<br>')}
+    <div class="container" id="initial-form-container">
+        <h1>Registre um Problema e envie para o Vereador</h1>
+        <form id="initial-form">
+            
+            <div class="form-group form-group-with-mic">
+                <label for="nome">Seu Nome Completo</label>
+                <div class="input-wrapper">
+                    <input type="text" id="nome" name="nome" required>
+                    <button type="button" class="mic-btn" id="mic-nome">
+                        <img id="mic-nome-icon" src="pngegg.png" alt="Gravar nome">
+                    </button>
+                </div>
             </div>
-            <hr>
-            <p>${imagem_base64 ? 'Uma imagem foi anexada para referência.' : 'Nenhuma imagem enviada.'}</p>
-        `,
-        attachments: [],
-    };
+            
+            <div class="form-group form-group-with-mic">
+                <label for="telefone">Telefone / WhatsApp</label>
+                <div class="input-wrapper">
+                    <input type="tel" id="telefone" name="telefone" required placeholder="(XX) XXXXX-XXXX">
+                     <button type="button" class="mic-btn" id="mic-telefone">
+                        <img id="mic-telefone-icon" src="pngegg.png" alt="Gravar telefone">
+                    </button>
+                </div>
+            </div>
 
-    // Anexo (Nenhuma mudança aqui)
-    if (imagem_base64) {
-        const base64Data = imagem_base64.replace(/^data:image\/\w+;base64,/, "");
-        const imageBuffer = Buffer.from(base64Data, 'base64');
-        mailOptions.attachments.push({
-            filename: `problema-urbano-${Date.now()}.jpeg`,
-            content: imageBuffer,
-            contentType: 'image/jpeg',
-        });
-    }
+            <div class="form-group">
+                <label for="endereco-automatico-display">Endereço do Problema (via GPS)</label>
+                <div id="endereco-automatico-display">
+                    Buscando localização de alta precisão...
+                </div>
+            </div>
+            
+            <button type="button" class="submit-btn" id="start-camera-button" disabled>
+                <span>Aguardando GPS...</span>
+            </button>
+            
+        </form>
+        
+        <div id="form-result"></div>
+    </div>
+    
+    <div id="capture-ui">
+        <img id="preview-img" alt="Pré-visualização do problema" />
+        <div id="status-text" style="display: none;"></div> 
+        <div id="review-area">
+            <label for="descricao_ia_review">Texto a ser enviado (gerado por IA):</label>
+            <textarea id="descricao_ia_review" rows="6"></textarea>
+        </div>
+        
+        <form id="indication-form">
+            <input type="hidden" id="imagem_base64" name="imagem_base64">
+            <input type="hidden" id="problema_identificado" name="problema_identificado">
+            <input type="hidden" id="descricao_ai" name="descricao_ai"> 
+            
+            <input type="hidden" id="nome_final" name="nome_final"> 
+            <input type="hidden" id="telefone_final" name="telefone_final"> 
+            
+            <input type="hidden" id="endereco_final" name="endereco_final"> 
+            <input type="hidden" id="latitude_final" name="latitude_final">
+            <input type="hidden" id="longitude_final" name="longitude_final">
 
-    // Envia o e-mail
-    transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-            console.error('Erro ao enviar e-mail:', error);
-            return res.status(500).json({ message: 'Falha ao enviar o e-mail.' });
+            
+            <button type="button" class="submit-btn" id="capture-restart-button" style="margin-top: 15px; margin-bottom: 20px;">
+                <span>📸 Capturar Imagem e Analisar Problema</span>
+            </button>
+            <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
+                <span>✅ Enviar para o Vereador</span>
+            </button>
+        </form>
+        
+        <button type="button" id="back-button" style="background: none; border: none; color: white; margin-top: 10px; font-size: 0.9rem; text-decoration: underline;">
+            Voltar ao Formulário
+        </button>
+    </div>
+
+    <div id="success-modal" class="modal-overlay">
+        <div class="modal-content">
+            <p id="success-message"></p>
+        </div>
+    </div>
+
+    <script>
+        // Elementos Etapa 1
+        const initialFormContainer = document.getElementById('initial-form-container');
+        const initialForm = document.getElementById('initial-form');
+        const startCameraButton = document.getElementById('start-camera-button');
+        const nomeInput = document.getElementById('nome');
+        const telefoneInput = document.getElementById('telefone'); 
+        const enderecoDisplay = document.getElementById('endereco-automatico-display');
+        const micNomeButton = document.getElementById('mic-nome');
+        const micTelefoneButton = document.getElementById('mic-telefone');
+        
+        const micNomeIcon = document.getElementById('mic-nome-icon');
+        const micTelefoneIcon = document.getElementById('mic-telefone-icon');
+
+        // Elementos Etapa 2 (Captura)
+        const captureUI = document.getElementById('capture-ui');
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const previewImg = document.getElementById("preview-img");
+        const statusText = document.getElementById('status-text');
+        const captureRestartButton = document.getElementById('capture-restart-button'); 
+        const backButton = document.getElementById('back-button');
+        const reviewArea = document.getElementById('review-area');
+        const descricaoIaReview = document.getElementById('descricao_ia_review');
+        
+        // Elementos Etapa 3 (Envio)
+        const form = document.getElementById('indication-form');
+        const submitButton = document.getElementById('submit-button');
+        const resultDiv = document.getElementById('form-result'); 
+        
+        // Campos Ocultos
+        const imgBase64Input = document.getElementById('imagem_base64');
+        const problemaInput = document.getElementById('problema_identificado');
+        const descricaoAIInput = document.getElementById('descricao_ai');
+        const nomeFinalInput = document.getElementById('nome_final');
+        const telefoneFinalInput = document.getElementById('telefone_final'); 
+        const enderecoFinalInput = document.getElementById('endereco_final');
+        const latitudeFinalInput = document.getElementById('latitude_final');
+        const longitudeFinalInput = document.getElementById('longitude_final');
+
+        let isAnalyzing = false;
+        let capturedImageBase64 = null;
+        let cameraStream = null; 
+
+        // --- LÓGICA DE TRANSCRIÇÃO DE VOZ (PUSH-TO-TALK) ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        let isListening = false;
+        let targetInput = null;
+        let targetIcon = null;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';
+            recognition.continuous = false; 
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isListening = true;
+                if (targetIcon) {
+                    targetIcon.style.filter = "invert(50%) sepia(100%) saturate(500%) hue-rotate(180deg) brightness(100%)";
+                }
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                if (targetIcon) {
+                    targetIcon.style.filter = "none";
+                }
+                targetInput = null;
+                targetIcon = null;
+            };
+
+            recognition.onresult = (event) => {
+                if (!targetInput) return; 
+
+                let transcript = event.results[0][0].transcript;
+                
+                if (targetInput.id === 'telefone') {
+                    transcript = transcript.replace(/\D/g, ''); 
+                }
+
+                targetInput.value = transcript;
+                targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Erro na transcrição: ", event.error);
+                if (event.error === 'no-speech') {
+                    // Ignora
+                } else if (event.error === 'not-allowed') {
+                    alert('Permissão para o microfone foi negada. Você precisa permitir nas configurações.');
+                }
+                
+                if (targetIcon) {
+                    targetIcon.style.filter = "none";
+                }
+                targetInput = null;
+                targetIcon = null;
+                isListening = false;
+            };
+            
+            const startRecognition = (inputEl, iconEl) => {
+                if (isListening) {
+                    recognition.abort();
+                }
+
+                targetInput = inputEl;
+                targetIcon = iconEl;
+                
+                if (navigator.vibrate) {
+                    navigator.vibrate(500); 
+                }
+
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.error("Erro ao iniciar reconhecimento: ", e);
+                    if (targetIcon) targetIcon.style.filter = "none";
+                    targetInput = null;
+                    targetIcon = null;
+                    isListening = false;
+                }
+            };
+            
+            const stopRecognition = () => {
+                if (isListening) {
+                    recognition.stop(); 
+                }
+            };
+
+            const addMicListeners = (button, input, icon) => {
+                button.addEventListener('mousedown', (e) => {
+                    e.preventDefault(); 
+                    startRecognition(input, icon);
+                });
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); 
+                    startRecognition(input, icon);
+                }, { passive: false });
+                
+                button.addEventListener('mouseup', stopRecognition);
+                button.addEventListener('touchend', stopRecognition);
+                button.addEventListener('mouseleave', stopRecognition); 
+            };
+
+            addMicListeners(micNomeButton, nomeInput, micNomeIcon);
+            addMicListeners(micTelefoneButton, telefoneInput, micTelefoneIcon);
+
+        } else {
+            console.warn("Web Speech API (transcrição) não suportada neste navegador.");
+            micNomeButton.style.display = 'none';
+            micTelefoneButton.style.display = 'none';
         }
-        res.status(200).json({ message: 'E-mail enviado com sucesso!' });
-    });
-});
+        // --- FIM DA LÓGICA DE TRANSCRIÇÃO ---
 
-module.exports = app;
+        // --- LÓGICA DE BLOQUEIO DE PALAVRAS ---
+        const blockedWords = [
+            'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido', 
+            'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar', 
+            'mãe', 'denúncia', 'denuncia', 'caralho', 'ladrão', 'corrupto', 
+            'idiota', 'imbecil', 'vtmnc', 'ladrões', 'corrupto', 'ladrao', 'ladrão','foder', 'fuder','vsf','vtmnc','merda','puta','bosta','foda','porra','viado','veado','buceta','cacete','idiota','imbecil','chupa','chupar','pica','piru','pika','anus'
+        ];
+        const blockedWordsRegex = new RegExp(`\\b(${blockedWords.join('|')})\\b`, 'gi');
+
+        function sanitizeInput(event) {
+            const input = event.target;
+            const originalValue = input.value;
+            const sanitizedValue = originalValue.replace(blockedWordsRegex, ''); 
+            if (originalValue !== sanitizedValue) {
+                const cursorPosition = input.selectionStart - (originalValue.length - sanitizedValue.length);
+                input.value = sanitizedValue;
+                input.setSelectionRange(cursorPosition, cursorPosition);
+            }
+        }
+        nomeInput.addEventListener('input', sanitizeInput);
+        descricaoIaReview.addEventListener('input', () => {
+            descricaoAIInput.value = descricaoIaReview.value.replace(blockedWordsRegex, '');
+        });
+
+        // --- FUNÇÕES DE CÂMERA ---
+        async function startCameraStream() {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
+                video.srcObject = cameraStream;
+                video.style.display = 'block';
+                video.play(); 
+                statusText.style.display = 'none'; 
+                return cameraStream;
+            } catch (err) {
+                statusText.textContent = 'Erro ao acessar a câmera. Verifique as permissões.';
+                statusText.style.display = 'block';
+                console.error("Erro na Câmera:", err);
+                throw err;
+            }
+        }
+        
+        function stopCameraStream() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                video.srcObject = null; 
+                video.style.display = 'none';
+                previewImg.style.display = 'none';
+                cameraStream = null;
+            }
+        }
+        
+        function receiveLocationFromAndroid(latitude, longitude, streetAddress) {
+            console.log("Localização recebida do Android:", latitude, longitude, streetAddress);
+
+            if (streetAddress) {
+                enderecoDisplay.textContent = streetAddress;
+                enderecoDisplay.style.color = 'var(--text-color)';
+            } else {
+                enderecoDisplay.textContent = 'Não foi possível obter o nome da rua. Apenas coordenadas GPS serão salvas.';
+                enderecoDisplay.style.color = 'var(--error-color)';
+            }
+
+            latitudeFinalInput.value = latitude;
+            longitudeFinalInput.value = longitude;
+            enderecoFinalInput.value = streetAddress || `Coords: ${latitude}, ${longitude}`;
+
+            startCameraButton.disabled = false;
+            startCameraButton.querySelector('span').textContent = '▶️ Iniciar Câmera';
+        }
+        
+        function onLocationError(errorMessage) {
+            enderecoDisplay.textContent = `Falha no GPS: ${errorMessage}`;
+            enderecoDisplay.style.color = 'var(--error-color)';
+            startCameraButton.disabled = true;
+            startCameraButton.querySelector('span').textContent = 'Erro no GPS';
+        }
+
+        // --- HANDLER: INICIAR CÂMERA (ETAPA 1 -> ETAPA 2) ---
+        startCameraButton.addEventListener('click', async () => {
+            const nomeSanitizado = nomeInput.value.replace(blockedWordsRegex, '').trim();
+            const telefone = telefoneInput.value.trim().replace(/\D/g, ''); 
+            const lat = latitudeFinalInput.value;
+            const lon = longitudeFinalInput.value;
+
+            if (nomeSanitizado.length < 4) {
+                    resultDiv.innerHTML = `❌ O campo Nome Completo deve ter no mínimo 4 letras.`;
+                    resultDiv.style.display = 'block';
+                    return;
+            }
+            if (telefone.length < 8) { 
+                    resultDiv.innerHTML = `❌ O campo Telefone/WhatsApp deve ter no mínimo 8 dígitos.`;
+                    resultDiv.style.display = 'block';
+                    return;
+            }
+            if (!lat || !lon) { 
+                    resultDiv.innerHTML = `❌ Erro: Localização GPS não foi obtida. Tente reiniciar o app.`;
+                    resultDiv.style.display = 'block';
+                    return;
+            }
+
+            resultDiv.style.display = 'none'; 
+            nomeInput.value = nomeSanitizado; 
+            
+            nomeFinalInput.value = nomeSanitizado;
+            telefoneFinalInput.value = telefone;
+
+            try {
+                startCameraButton.disabled = true;
+                startCameraButton.querySelector('span').textContent = 'Ativando a Câmera...';
+                
+                initialFormContainer.style.display = 'none';
+                captureUI.style.display = 'flex'; 
+                
+                await startCameraStream(); 
+                resetCaptureButton();
+
+            } catch (error) {
+                initialFormContainer.style.display = 'flex'; 
+                captureUI.style.display = 'none';
+                resultDiv.innerHTML = `❌ Erro na Câmera: ${error.message}.`;
+                resultDiv.style.display = 'block';
+            }
+        });
+        
+        // --- HANDLER: VOLTAR (ETAPA 2 -> ETAPA 1) ---
+        backButton.addEventListener('click', () => {
+            stopCameraStream();
+            captureUI.style.display = 'none';
+            initialFormContainer.style.display = 'flex'; 
+            
+            nomeFinalInput.value = '';
+            telefoneFinalInput.value = '';
+            enderecoFinalInput.value = '';
+            latitudeFinalInput.value = '';
+            longitudeFinalInput.value = '';
+            
+            startCameraButton.disabled = true;
+            startCameraButton.querySelector('span').textContent = 'Aguardando GPS...';
+            enderecoDisplay.textContent = 'Buscando localização de alta precisão...';
+            enderecoDisplay.style.color = '#555';
+            
+            if (window.Android && typeof window.Android.requestLocationUpdate === 'function') {
+                window.Android.requestLocationUpdate();
+            }
+
+            reviewArea.style.display = 'none'; 
+            descricaoIaReview.value = ''; 
+            submitButton.style.display = 'none';
+            resetCaptureButton();
+            previewImg.style.display = 'none';
+            statusText.style.display = 'none';
+            resultDiv.style.display = 'none'; 
+        });
+
+        // --- Funções de Botão (Sem alterações) ---
+        function resetCaptureButton() {
+            captureRestartButton.style.display = 'block';
+            captureRestartButton.disabled = false;
+            captureRestartButton.querySelector('span').textContent = '📸 Capturar Imagem e Analisar Problema';
+            captureRestartButton.removeEventListener('click', restartCamera);
+            captureRestartButton.addEventListener('click', startAnalysis);
+        }
+        function switchToRestartButton() {
+            captureRestartButton.disabled = false;
+            captureRestartButton.querySelector('span').textContent = '🔄 Reiniciar Câmera';
+            captureRestartButton.style.backgroundColor = 'var(--primary-hover)';
+            captureRestartButton.removeEventListener('click', startAnalysis);
+            captureRestartButton.addEventListener('click', restartCamera);
+        }
+        async function restartCamera() {
+            stopCameraStream(); 
+            statusText.style.display = 'none';
+            submitButton.style.display = 'none';
