@@ -412,7 +412,7 @@
                 targetIcon = iconEl;
                 
                 if (navigator.vibrate) {
-                    navigator.vibrate(500); 
+                    navigator.vibrate(200); 
                 }
 
                 try {
