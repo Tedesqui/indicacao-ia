@@ -70,7 +70,7 @@ const sendEmailHandler = (req, res) => {
             <p><strong>Coordenadas Exatas:</strong> ${latitude}, ${longitude}</p>
             <p><strong><a href="${googleMapsLink}" target="_blank">Ver no Google Maps</a></strong></p>
             <hr>
-            <p><strong>Relato Formal Gerado pela IA (Baseado na Imagem e Local):</strong></p>
+            <p><strong>Relatório Formal Gerado pela IA (Baseado na Imagem e Local):</strong></p>
             <div style="border: 1px solid #ccc; padding: 15px; background: #f9f9f9; line-height: 1.5;">
                 ${descricao.replace(/\n/g, '<br>')}
             </div>
