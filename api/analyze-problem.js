@@ -1,13 +1,16 @@
 /*
  * Ficheiro: api/analyze-problem.js
- * ROTA: /api/analyze-problem (POST)
- * MODIFICADO: Para aceitar latitude e longitude do frontend.
+ * CORREÇÃO: Adicionado suporte para requisição OPTIONS (CORS)
  */
 
 import express from 'express';
 import OpenAI from 'openai';
+import cors from 'cors'; // Garanta que 'cors' está instalado no package.json
 
 const app = express();
+
+// Aplica o middleware CORS para permitir acesso de qualquer origem
+app.use(cors());
 app.use(express.json({ limit: '50mb' })); 
 
 const openai = new OpenAI({
@@ -16,6 +19,11 @@ const openai = new OpenAI({
 
 const analyzeProblemHandler = async (req, res) => {
     
+    // ## CORREÇÃO CRÍTICA: Aceitar o "aperto de mão" do Android ##
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     if (req.method === 'GET') {
          return res.status(405).json({ message: 'Method Not Allowed. Use POST para análise.' });
     }
@@ -25,19 +33,16 @@ const analyzeProblemHandler = async (req, res) => {
     }
     
     try {
-        // MODIFICADO: Recebe latitude e longitude
         const { image, latitude, longitude } = req.body;
 
         if (!image) {
             return res.status(400).json({ error: 'A imagem é obrigatória para análise.' });
         }
 
-        // MODIFICADO: Cria o texto de localização
         const locationText = (latitude && longitude) 
             ? `O problema foi relatado na seguinte localização GPS: Latitude ${latitude}, Longitude ${longitude}.`
             : `A localização GPS não foi fornecida.`;
 
-        // --- PROMPT MODIFICADO (para incluir localização) ---
         const promptText = `
         Você é um **Assistente de Serviço Cívico e Moderador de Conteúdo**. Sua tarefa primária é analisar a imagem fornecida para identificar um problema urbano.
 
@@ -63,7 +68,6 @@ const analyzeProblemHandler = async (req, res) => {
           "formal_description": "A descrição pura do problema da imagem, começando com a localização e sem saudações ou assinaturas."
         }
         `;
-        // --- FIM DO PROMPT MODIFICADO ---
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o",
