@@ -34,6 +34,7 @@
         }
         #initial-form-container {
             position: fixed;
+            /* Posição ajustada para cima */
             top: -20px; 
             left: 50%;
             transform: translateX(-50%); 
@@ -111,7 +112,6 @@
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
         
-        /* NOVO: Estilo para o display de endereço automático */
         #endereco-automatico-display {
             width: 100%;
             padding: 0.8rem 1rem;
@@ -119,7 +119,7 @@
             border-radius: 8px;
             box-sizing: border-box;
             font-size: 1rem;
-            background-color: #f0f0f0; /* Cinza claro, indicando "buscando" */
+            background-color: #f0f0f0; 
             color: #555;
             min-height: 50px;
         }
@@ -137,10 +137,17 @@
             margin-right: auto; 
         }
         .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
-        #form-result { margin-top: 1.5rem; padding: 1rem; border-radius: 8px; text-align: center; font-weight: 500; display: none;  /* LINHAS ADICIONADAS PARA SUBIR 25px */
-            position: relative;
-            bottom: 25px; }
+        
+        #form-result { 
+            margin-top: 1.5rem; 
+            padding: 1rem; 
+            border-radius: 8px; 
+            text-align: center; 
+            font-weight: 500; 
+            display: none; 
+        }
         #form-result.error { background-color: #fdecea; color: var(--error-color); display: block; }
+        
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background-color: var(--form-background); padding: 2.5rem 3.5rem; border-radius: 12px; text-align: center; }
         .modal-content p { margin: 0; font-size: 1.2rem; font-weight: 600; color: var(--success-color); }
@@ -152,6 +159,62 @@
             object-fit: contain; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
+        
+        /* --- CSS DO MICROFONE --- */
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .mic-btn {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            opacity: 0.7;
+            z-index: 5;
+            transition: transform 0.1s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px; 
+            height: 45px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        .mic-btn img {
+            width: 100%; 
+            height: 100%;
+            object-fit: contain;
+            transition: filter 0.1s ease-out;
+            pointer-events: none; 
+        }
+        .mic-btn:hover {
+            opacity: 1;
+        }
+        
+        .mic-btn:active {
+             transform: translateY(-50%) scale(2.0);
+             opacity: 1;
+        }
+
+        .mic-btn.is-listening img {
+             filter: invert(50%) sepia(100%) saturate(500%) hue-rotate(180deg) brightness(100%);
+        }
+
+        .form-group-with-mic input[type="text"],
+        .form-group-with-mic input[type="tel"] {
+            padding-right: 55px;
+        }
+        /* --- FIM DO CSS DO MICROFONE --- */
+
     </style>
 </head>
 <body>
@@ -161,14 +224,25 @@
     <div class="container" id="initial-form-container">
         <h1>Registre um Problema e envie para o Vereador</h1>
         <form id="initial-form">
-            <div class="form-group">
+            
+            <div class="form-group form-group-with-mic">
                 <label for="nome">Seu Nome Completo</label>
-                <input type="text" id="nome" name="nome" required>
+                <div class="input-wrapper">
+                    <input type="text" id="nome" name="nome" required>
+                    <button type="button" class="mic-btn" id="mic-nome">
+                        <img id="mic-nome-icon" src="pngegg.png" alt="Gravar nome">
+                    </button>
+                </div>
             </div>
             
-            <div class="form-group">
+            <div class="form-group form-group-with-mic">
                 <label for="telefone">Telefone / WhatsApp</label>
-                <input type="tel" id="telefone" name="telefone" required placeholder="(XX) XXXXX-XXXX">
+                <div class="input-wrapper">
+                    <input type="tel" id="telefone" name="telefone" required placeholder="(XX) XXXXX-XXXX">
+                     <button type="button" class="mic-btn" id="mic-telefone">
+                        <img id="mic-telefone-icon" src="pngegg.png" alt="Gravar telefone">
+                    </button>
+                </div>
             </div>
 
             <div class="form-group">
@@ -178,9 +252,12 @@
                 </div>
             </div>
             
-            <button type="button" class="submit-btn" id="start-camera-button" disabled> <span>Aguardando GPS...</span>
+            <button type="button" class="submit-btn" id="start-camera-button" disabled>
+                <span>Aguardando GPS...</span>
             </button>
+            
         </form>
+        
         <div id="form-result"></div>
     </div>
     
@@ -231,8 +308,13 @@
         const startCameraButton = document.getElementById('start-camera-button');
         const nomeInput = document.getElementById('nome');
         const telefoneInput = document.getElementById('telefone'); 
-        const enderecoDisplay = document.getElementById('endereco-automatico-display'); 
+        const enderecoDisplay = document.getElementById('endereco-automatico-display');
+        const micNomeButton = document.getElementById('mic-nome');
+        const micTelefoneButton = document.getElementById('mic-telefone');
         
+        const micNomeIcon = document.getElementById('mic-nome-icon');
+        const micTelefoneIcon = document.getElementById('mic-telefone-icon');
+
         // Elementos Etapa 2 (Captura)
         const captureUI = document.getElementById('capture-ui');
         const video = document.getElementById("video");
@@ -264,7 +346,119 @@
         let capturedImageBase64 = null;
         let cameraStream = null; 
 
-        // --- LÓGICA DE BLOQUEIO DE PALAVRAS (Sem alteração) ---
+        // --- LÓGICA DE TRANSCRIÇÃO DE VOZ (PUSH-TO-TALK) ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        let isListening = false;
+        let targetInput = null;
+        let targetIcon = null;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';
+            recognition.continuous = false; 
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isListening = true;
+                if (targetIcon) {
+                    targetIcon.style.filter = "invert(50%) sepia(100%) saturate(500%) hue-rotate(180deg) brightness(100%)";
+                }
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                if (targetIcon) {
+                    targetIcon.style.filter = "none";
+                }
+                targetInput = null;
+                targetIcon = null;
+            };
+
+            recognition.onresult = (event) => {
+                if (!targetInput) return; 
+
+                let transcript = event.results[0][0].transcript;
+                
+                if (targetInput.id === 'telefone') {
+                    transcript = transcript.replace(/\D/g, ''); 
+                }
+
+                targetInput.value = transcript;
+                targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Erro na transcrição: ", event.error);
+                if (event.error === 'no-speech') {
+                    // Ignora
+                } else if (event.error === 'not-allowed') {
+                    alert('Permissão para o microfone foi negada. Você precisa permitir nas configurações.');
+                }
+                
+                if (targetIcon) {
+                    targetIcon.style.filter = "none";
+                }
+                targetInput = null;
+                targetIcon = null;
+                isListening = false;
+            };
+            
+            const startRecognition = (inputEl, iconEl) => {
+                if (isListening) {
+                    recognition.abort();
+                }
+
+                targetInput = inputEl;
+                targetIcon = iconEl;
+                
+                if (navigator.vibrate) {
+                    navigator.vibrate(500); 
+                }
+
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.error("Erro ao iniciar reconhecimento: ", e);
+                    if (targetIcon) targetIcon.style.filter = "none";
+                    targetInput = null;
+                    targetIcon = null;
+                    isListening = false;
+                }
+            };
+            
+            const stopRecognition = () => {
+                if (isListening) {
+                    recognition.stop(); 
+                }
+            };
+
+            const addMicListeners = (button, input, icon) => {
+                button.addEventListener('mousedown', (e) => {
+                    e.preventDefault(); 
+                    startRecognition(input, icon);
+                });
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); 
+                    startRecognition(input, icon);
+                }, { passive: false });
+                
+                button.addEventListener('mouseup', stopRecognition);
+                button.addEventListener('touchend', stopRecognition);
+                button.addEventListener('mouseleave', stopRecognition); 
+            };
+
+            addMicListeners(micNomeButton, nomeInput, micNomeIcon);
+            addMicListeners(micTelefoneButton, telefoneInput, micTelefoneIcon);
+
+        } else {
+            console.warn("Web Speech API (transcrição) não suportada neste navegador.");
+            micNomeButton.style.display = 'none';
+            micTelefoneButton.style.display = 'none';
+        }
+        // --- FIM DA LÓGICA DE TRANSCRIÇÃO ---
+
+        // --- LÓGICA DE BLOQUEIO DE PALAVRAS ---
         const blockedWords = [
             'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido', 
             'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar', 
@@ -288,7 +482,7 @@
             descricaoAIInput.value = descricaoIaReview.value.replace(blockedWordsRegex, '');
         });
 
-        // --- FUNÇÕES DE CÂMERA (Sem alteração) ---
+        // --- FUNÇÕES DE CÂMERA ---
         async function startCameraStream() {
             try {
                 cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
@@ -315,8 +509,7 @@
             }
         }
         
-        // ## NOVO ##: A "PONTE" QUE RECEBE DADOS DO ANDROID
-        // Esta função será chamada pelo código NATIVO (Java/Kotlin)
+        // ## A "PONTE" QUE RECEBE DADOS DO ANDROID ##
         function receiveLocationFromAndroid(latitude, longitude, streetAddress) {
             console.log("Localização recebida do Android:", latitude, longitude, streetAddress);
 
@@ -328,17 +521,14 @@
                 enderecoDisplay.style.color = 'var(--error-color)';
             }
 
-            // Preenche os campos ocultos que serão enviados
             latitudeFinalInput.value = latitude;
             longitudeFinalInput.value = longitude;
             enderecoFinalInput.value = streetAddress || `Coords: ${latitude}, ${longitude}`;
 
-            // Habilita o botão para o usuário
             startCameraButton.disabled = false;
             startCameraButton.querySelector('span').textContent = '▶️ Iniciar Câmera';
         }
         
-        // Função chamada se o Android falhar em obter o GPS
         function onLocationError(errorMessage) {
             enderecoDisplay.textContent = `Falha no GPS: ${errorMessage}`;
             enderecoDisplay.style.color = 'var(--error-color)';
@@ -353,7 +543,6 @@
             const lat = latitudeFinalInput.value;
             const lon = longitudeFinalInput.value;
 
-            // --- VALIDAÇÃO REFORÇADA ---
             if (nomeSanitizado.length < 4) {
                     resultDiv.innerHTML = `❌ O campo Nome Completo deve ter no mínimo 4 letras.`;
                     resultDiv.style.display = 'block';
@@ -369,13 +558,12 @@
                     resultDiv.style.display = 'block';
                     return;
             }
-            // --- FIM VALIDAÇÃO REFORÇADA ---
 
             resultDiv.style.display = 'none'; 
             nomeInput.value = nomeSanitizado; 
             
             nomeFinalInput.value = nomeSanitizado;
-            telefoneFinalInput.value = telefone; // <-- CAMPO DE TELEFONE ADICIONADO
+            telefoneFinalInput.value = telefone;
 
             try {
                 startCameraButton.disabled = true;
@@ -412,7 +600,6 @@
             enderecoDisplay.textContent = 'Buscando localização de alta precisão...';
             enderecoDisplay.style.color = '#555';
             
-            // ## NOVO ##: Pede ao Android para buscar o GPS novamente
             if (window.Android && typeof window.Android.requestLocationUpdate === 'function') {
                 window.Android.requestLocationUpdate();
             }
@@ -460,7 +647,7 @@
             }
         }
 
-        // --- 2. INÍCIO DA CAPTURA (MODIFICADO) ---
+        // --- 2. INÍCIO DA CAPTURA ---
         async function startAnalysis() {
             if (isAnalyzing) return;
             isAnalyzing = true;
@@ -478,23 +665,21 @@
                 statusText.style.display = 'block'; 
                 statusText.textContent = 'Capturando imagem...';
 
-                // 1. Capturar Imagem
-                const MAX_WIDTH = 1024;
+                // ## CORREÇÃO CRÍTICA PARA VERCEL (Payload Size) ##
+                const MAX_WIDTH = 640; // Reduzido para evitar erro 413 (Payload Too Large)
                 const scale = MAX_WIDTH / video.videoWidth;
                 canvas.width = MAX_WIDTH;
                 canvas.height = video.videoHeight * scale;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.6); 
+                capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.5); // Qualidade reduzida para 0.5
 
                 stopCameraStream();
                 previewImg.src = capturedImageBase64;
                 previewImg.style.display = 'block';
                 
-                // 3. Chamar a API de IA para Análise (AGORA COM GPS)
                 statusText.textContent = 'Analisando imagem e gerando texto...';
                 captureRestartButton.querySelector('span').textContent = 'Analisando com IA...';
                 
-                // ## ATENÇÃO ##: MUDE O 'SEU_IP_AQUI' E A PORTA
                 const analysisResponse = await fetch('https://indicacao-ia.vercel.app/api/analyze-problem', { 
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -518,7 +703,6 @@
                     throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema público.');
                 }
                 
-                // 4. Preencher campos ocultos e preparar para o envio
                 const sanitizedDescription = analysisResult.formal_description.replace(blockedWordsRegex, '');
                 problemaInput.value = analysisResult.problem_type.replace(blockedWordsRegex, ''); 
                 descricaoAIInput.value = sanitizedDescription;
@@ -526,8 +710,9 @@
                 descricaoIaReview.value = sanitizedDescription;
                 reviewArea.style.display = 'block';
 
-                // 5. Mudar a interface
-                statusText.innerHTML = `✅ **Problema:** ${problemaInput.value}. Revise o texto abaixo e clique em 'Enviar'.`;
+                // ## MUDANÇA DE TEXTO ##
+                statusText.innerHTML = `✅ **Problema Identificado:** ${problemaInput.value}. Revise o texto abaixo e clique em 'Enviar'.`;
+                
                 submitButton.style.display = 'block'; 
                 switchToRestartButton(); 
 
@@ -547,14 +732,13 @@
             }
         }
 
-        // --- 3. SUBMISSÃO FINAL DO FORMULÁRIO (MODIFICADO) ---
+        // --- 3. SUBMISSÃO FINAL DO FORMULÁRIO ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             submitButton.disabled = true;
             submitButton.querySelector('span').textContent = 'Enviando e-mail...';
             
-            // ## MODIFICADO ##: Enviando todos os dados
             const dataToSend = {
                 nome: nomeFinalInput.value, 
                 telefone: telefoneFinalInput.value, 
@@ -566,8 +750,7 @@
                 longitude: longitudeFinalInput.value
             };
 
-            // ## ATENÇÃO ##: MUDE O 'SEU_IP_AQUI' E A PORTA
-            const backendUrl = 'http://SEU_IP_AQUI:3000/api/send-email'; 
+            const backendUrl = 'https://indicacao-ia.vercel.app/api/send-email'; 
 
             try {
                 const response = await fetch(backendUrl, {
@@ -584,9 +767,8 @@
                 document.getElementById('success-message').textContent = "Indicação enviada com sucesso!";
                 document.getElementById('success-modal').style.display = 'flex';
                 
-                // Reinicia para a Etapa 1
                 initialForm.reset();
-                backButton.click(); // Simula o clique no botão 'voltar' para resetar tudo
+                backButton.click(); 
                 
                 setTimeout(() => {
                     document.getElementById('success-modal').style.display = 'none';
@@ -597,7 +779,7 @@
                 statusText.style.display = 'block';
             } finally {
                  submitButton.disabled = false;
-                 submitButton.querySelector('span').textContent = '✅ Enviar para o Vereador';
+                 submitButton.querySelector('span').textContent = '✅ Enviar para a Prefeitura';
             }
         });
 
@@ -607,6 +789,3 @@
     </script>
 </body>
 </html>
-
-
-
