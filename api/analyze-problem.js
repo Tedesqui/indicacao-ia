@@ -1,6 +1,6 @@
 /*
  * Ficheiro: api/analyze-problem.js
- * CORREÇÃO DEFINITIVA: Usa gpt-4o-mini para evitar timeout e CORS manual
+ * ATENÇÃO: Revertido para gpt-4o para TESTE (provavelmente causará timeout na Vercel gratuita)
  */
 
 import express from 'express';
@@ -9,7 +9,6 @@ import cors from 'cors';
 
 const app = express();
 
-// Permite conexões de qualquer lugar (Correção CORS)
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); 
 
@@ -19,7 +18,6 @@ const openai = new OpenAI({
 
 const analyzeProblemHandler = async (req, res) => {
     
-    // Responde ao "aperto de mão" do Android imediatamente
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -58,8 +56,8 @@ const analyzeProblemHandler = async (req, res) => {
         `;
 
         const completion = await openai.chat.completions.create({
-            // ## AQUI ESTÁ A SOLUÇÃO DO ERRO ##
-            model: "gpt-4o-mini", // O 'mini' é muito mais rápido (2-3s) e evita o timeout da Vercel
+            // ## MUDANÇA: Voltando para GPT-4o completo ##
+            model: "gpt-4o", 
             response_format: { type: "json_object" },
             messages: [
                 {
@@ -70,7 +68,7 @@ const analyzeProblemHandler = async (req, res) => {
                     ],
                 },
             ],
-            max_tokens: 800, // Reduzido para ser mais rápido
+            max_tokens: 1500, // Aumentado novamente, mas pode ser limitado pelo timeout
         });
 
         const aiResultString = completion.choices[0].message.content;
