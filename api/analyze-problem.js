@@ -45,7 +45,7 @@ const analyzeProblemHandler = async (req, res) => {
         3. Se for problema:
            - is_inappropriate=false
            - problem_type="Resumo curto (ex: Buraco na rua)"
-           - formal_description="Descrição formal e técnica do problema para um vereador. Comece citando a localização: ${locationText}. Não use saudações."
+           - formal_description="Descrição formal e técnica do problema para uma prefeitura. Comece citando a localização: ${locationText}. Não use saudações."
 
         Retorne APENAS JSON:
         {
