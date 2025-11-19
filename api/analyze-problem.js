@@ -46,7 +46,9 @@ const analyzeProblemHandler = async (req, res) => {
            - is_inappropriate=false
            - problem_type="Resumo curto (ex: Buraco na rua)"
            * **NÃO inclua coordenadas GPS** (latitude/longitude) no texto.
-           - formal_description="Descrição formal e técnica do problema para uma prefeitura. Não use saudações."
+           * **NÃO inclua dados sobre o endereço no texto.
+           * **NÃO inclua a frase "a imagem mostra" no texto pois essa informação é redundante.
+            - formal_description="Descrição formal e técnica do problema para uma prefeitura. Não use saudações."
 
         Retorne APENAS JSON:
         {
