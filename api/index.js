@@ -693,7 +693,7 @@
                 }
                 const problemTypeClean = analysisResult.problem_type.toLowerCase();
                 if (problemTypeClean.includes("nenhum problema") || problemTypeClean.includes("n/a") || problemTypeClean.includes("não detectado")) {
-                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema público.');
+                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto está focada em um problema público');
                 }
                 
                 const sanitizedDescription = analysisResult.formal_description.replace(blockedWordsRegex, '');
