@@ -703,7 +703,7 @@
                 descricaoIaReview.value = sanitizedDescription;
                 reviewArea.style.display = 'block';
 
-                statusText.innerHTML = `✅ **Problema Identificado:** ${problemaInput.value}. Revise o texto abaixo e clique em 'Enviar'.`;
+                statusText.innerHTML = `✅ Problema Identificado: ${problemaInput.value}. Revise o texto abaixo e clique em 'Enviar'.`;
                 submitButton.style.display = 'block'; 
                 switchToRestartButton(); 
 
