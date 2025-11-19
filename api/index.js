@@ -34,6 +34,7 @@
         }
         #initial-form-container {
             position: fixed;
+            /* Movido 30px para cima para evitar corte */
             top: -20px; 
             left: 50%;
             transform: translateX(-50%); 
@@ -199,6 +200,7 @@
             opacity: 1;
         }
         
+        /* Cresce 100% (scale 2.0) ao pressionar */
         .mic-btn:active {
              transform: translateY(-50%) scale(2.0);
              opacity: 1;
@@ -213,7 +215,6 @@
             padding-right: 55px;
         }
         /* --- FIM DO CSS DO MICROFONE --- */
-
     </style>
 </head>
 <body>
@@ -221,7 +222,7 @@
     <canvas id="canvas"></canvas>
 
     <div class="container" id="initial-form-container">
-        <h1>Registre um Problema e envie para a Prefeitura</h1>
+        <h1>Registre um Problema e envie para o Vereador</h1>
         <form id="initial-form">
             
             <div class="form-group form-group-with-mic">
@@ -285,7 +286,7 @@
                 <span>📸 Capturar Imagem e Analisar Problema</span>
             </button>
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
-                <span>✅ Enviar para a Prefeitura</span>
+                <span>✅ Enviar para o Vereador</span>
             </button>
         </form>
         
@@ -301,7 +302,6 @@
     </div>
 
     <script>
-        // Elementos Etapa 1
         const initialFormContainer = document.getElementById('initial-form-container');
         const initialForm = document.getElementById('initial-form');
         const startCameraButton = document.getElementById('start-camera-button');
@@ -314,7 +314,6 @@
         const micNomeIcon = document.getElementById('mic-nome-icon');
         const micTelefoneIcon = document.getElementById('mic-telefone-icon');
 
-        // Elementos Etapa 2 (Captura)
         const captureUI = document.getElementById('capture-ui');
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
@@ -326,12 +325,10 @@
         const reviewArea = document.getElementById('review-area');
         const descricaoIaReview = document.getElementById('descricao_ia_review');
         
-        // Elementos Etapa 3 (Envio)
         const form = document.getElementById('indication-form');
         const submitButton = document.getElementById('submit-button');
         const resultDiv = document.getElementById('form-result'); 
         
-        // Campos Ocultos
         const imgBase64Input = document.getElementById('imagem_base64');
         const problemaInput = document.getElementById('problema_identificado');
         const descricaoAIInput = document.getElementById('descricao_ai');
@@ -412,7 +409,7 @@
                 targetIcon = iconEl;
                 
                 if (navigator.vibrate) {
-                    navigator.vibrate(200); 
+                    navigator.vibrate(500); 
                 }
 
                 try {
@@ -534,7 +531,7 @@
             startCameraButton.querySelector('span').textContent = 'Erro no GPS';
         }
 
-        // --- HANDLER: INICIAR CÂMERA (ETAPA 1 -> ETAPA 2) ---
+        // --- HANDLER: INICIAR CÂMERA ---
         startCameraButton.addEventListener('click', async () => {
             const nomeSanitizado = nomeInput.value.replace(blockedWordsRegex, '').trim();
             const telefone = telefoneInput.value.trim().replace(/\D/g, ''); 
@@ -581,7 +578,7 @@
             }
         });
         
-        // --- HANDLER: VOLTAR (ETAPA 2 -> ETAPA 1) ---
+        // --- HANDLER: VOLTAR ---
         backButton.addEventListener('click', () => {
             stopCameraStream();
             captureUI.style.display = 'none';
@@ -611,7 +608,6 @@
             resultDiv.style.display = 'none'; 
         });
 
-        // --- Funções de Botão (Sem alterações) ---
         function resetCaptureButton() {
             captureRestartButton.style.display = 'block';
             captureRestartButton.disabled = false;
@@ -630,3 +626,156 @@
             stopCameraStream(); 
             statusText.style.display = 'none';
             submitButton.style.display = 'none';
+            previewImg.style.display = 'none';
+            reviewArea.style.display = 'none'; 
+            descricaoIaReview.value = ''; 
+            try {
+                captureRestartButton.disabled = true;
+                captureRestartButton.querySelector('span').textContent = 'Ativando a Câmera...';
+                await startCameraStream();
+                resetCaptureButton(); 
+            } catch (error) {
+                statusText.innerHTML = `❌ Erro ao reiniciar câmera: ${error.message}.`;
+                statusText.style.display = 'block';
+                switchToRestartButton(); 
+            }
+        }
+
+        // --- 2. INÍCIO DA CAPTURA ---
+        async function startAnalysis() {
+            if (isAnalyzing) return;
+            isAnalyzing = true;
+            
+            if (!nomeFinalInput.value.trim() || !telefoneFinalInput.value.trim() || !latitudeFinalInput.value.trim()) {
+                    statusText.innerHTML = `❌ Erro: Dados de usuário ou GPS ausentes. Por favor, volte e tente novamente.`;
+                    statusText.style.display = 'block';
+                    isAnalyzing = false;
+                    return;
+            }
+            
+            try {
+                captureRestartButton.disabled = true;
+                captureRestartButton.querySelector('span').textContent = 'Preparando...';
+                statusText.style.display = 'block'; 
+                statusText.textContent = 'Capturando imagem...';
+
+                const MAX_WIDTH = 640; 
+                const scale = MAX_WIDTH / video.videoWidth;
+                canvas.width = MAX_WIDTH;
+                canvas.height = video.videoHeight * scale;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.5); 
+
+                stopCameraStream();
+                previewImg.src = capturedImageBase64;
+                previewImg.style.display = 'block';
+                
+                statusText.textContent = 'Analisando imagem e gerando texto...';
+                captureRestartButton.querySelector('span').textContent = 'Analisando com IA...';
+                
+                const analysisResponse = await fetch('https://indicacao-ia.vercel.app/api/analyze-problem', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        image: capturedImageBase64,
+                        latitude: latitudeFinalInput.value,
+                        longitude: longitudeFinalInput.value
+                    }),
+                });
+                
+                const analysisResult = await analysisResponse.json();
+                if (!analysisResponse.ok || analysisResult.error) {
+                    throw new Error(analysisResult.error || 'Falha na análise da IA.');
+                }
+                
+                if (analysisResult.is_inappropriate === true) {
+                    throw new Error('Conteúdo da imagem sinalizado como impróprio. O envio foi bloqueado!');
+                }
+                const problemTypeClean = analysisResult.problem_type.toLowerCase();
+                if (problemTypeClean.includes("nenhum problema") || problemTypeClean.includes("n/a") || problemTypeClean.includes("não detectado")) {
+                    throw new Error('Nenhum problema urbano detectado. Certifique-se de que a foto foca em um problema público.');
+                }
+                
+                const sanitizedDescription = analysisResult.formal_description.replace(blockedWordsRegex, '');
+                problemaInput.value = analysisResult.problem_type.replace(blockedWordsRegex, ''); 
+                descricaoAIInput.value = sanitizedDescription;
+                imgBase64Input.value = capturedImageBase64; 
+                descricaoIaReview.value = sanitizedDescription;
+                reviewArea.style.display = 'block';
+
+                statusText.innerHTML = `✅ **Problema Identificado:** ${problemaInput.value}. Revise o texto abaixo e clique em 'Enviar'.`;
+                submitButton.style.display = 'block'; 
+                switchToRestartButton(); 
+
+            } catch (error) {
+                statusText.innerHTML = `❌ Erro na análise: ${error.message}. Clique em 'Reiniciar Câmera' para tentar novamente.`;
+                statusText.style.display = 'block';
+                submitButton.style.display = 'none'; 
+                reviewArea.style.display = 'none'; 
+                if (!capturedImageBase64) {
+                    restartCamera(); 
+                } else {
+                    previewImg.style.display = 'block';
+                }
+                switchToRestartButton(); 
+            } finally {
+                isAnalyzing = false;
+            }
+        }
+
+        // --- 3. SUBMISSÃO FINAL DO FORMULÁRIO ---
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            submitButton.disabled = true;
+            submitButton.querySelector('span').textContent = 'Enviando e-mail...';
+            
+            const dataToSend = {
+                nome: nomeFinalInput.value, 
+                telefone: telefoneFinalInput.value, 
+                endereco: enderecoFinalInput.value, 
+                descricao: descricaoAIInput.value, 
+                imagem_base64: imgBase64Input.value, 
+                problema: problemaInput.value,
+                latitude: latitudeFinalInput.value,
+                longitude: longitudeFinalInput.value
+            };
+
+            const backendUrl = 'https://indicacao-ia.vercel.app/api/send-email'; 
+
+            try {
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataToSend),
+                });
+                
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.message || 'Ocorreu um erro no servidor.');
+                }
+
+                document.getElementById('success-message').textContent = "Indicação enviada com sucesso!";
+                document.getElementById('success-modal').style.display = 'flex';
+                
+                initialForm.reset();
+                backButton.click(); 
+                
+                setTimeout(() => {
+                    document.getElementById('success-modal').style.display = 'none';
+                }, 8000);
+
+            } catch (error) {
+                statusText.innerHTML = `❌ Erro ao enviar: ${error.message}.`;
+                statusText.style.display = 'block';
+            } finally {
+                 submitButton.disabled = false;
+                 submitButton.querySelector('span').textContent = '✅ Enviar para o Vereador';
+            }
+        });
+
+        captureRestartButton.addEventListener('click', startAnalysis);
+        initialFormContainer.style.display = 'flex';
+    </script>
+</body>
+</html>
