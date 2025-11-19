@@ -221,7 +221,7 @@
     <canvas id="canvas"></canvas>
 
     <div class="container" id="initial-form-container">
-        <h1>Registre um Problema e envie para o Vereador</h1>
+        <h1>Registre um Problema e envie para a Prefeitura</h1>
         <form id="initial-form">
             
             <div class="form-group form-group-with-mic">
@@ -285,7 +285,7 @@
                 <span>📸 Capturar Imagem e Analisar Problema</span>
             </button>
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
-                <span>✅ Enviar para o Vereador</span>
+                <span>✅ Enviar para a Prefeitura</span>
             </button>
         </form>
         
