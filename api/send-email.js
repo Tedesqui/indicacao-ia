@@ -1,16 +1,22 @@
 /*
  * Ficheiro: api/send-email.js
- * ROTA: /api/send-email (POST)
- * ATUALIZADO: Recebe dados do GPS (lat, lon, endereço por extenso) e telefone.
+ * CORREÇÃO: Adicionado suporte para requisição OPTIONS (CORS)
  */
 
 import express from 'express';
 import nodemailer from 'nodemailer';
+import cors from 'cors';
 
 const app = express();
+app.use(cors());
 app.use(express.json({ limit: '50mb' })); 
 
 const sendEmailHandler = (req, res) => {
+    
+    // ## CORREÇÃO CRÍTICA: Aceitar o "aperto de mão" do Android ##
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
     
     if (req.method === 'GET') {
          return res.status(405).json({ message: 'Method Not Allowed. Use POST para envio.' });
@@ -20,19 +26,17 @@ const sendEmailHandler = (req, res) => {
          return res.status(405).json({ message: 'Method Not Allowed.' });
     }
 
-    // --- MODIFICADO: Recebendo os novos campos do GPS e telefone ---
     const { 
         nome, 
-        telefone, // <-- NOVO
-        endereco, // <-- Agora vem do GPS/Geocoder
+        telefone, 
+        endereco, 
         descricao, 
         imagem_base64, 
         problema,
-        latitude, // <-- NOVO
-        longitude // <-- NOVO
+        latitude,
+        longitude
     } = req.body; 
     
-    // Configura o Nodemailer
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -41,11 +45,9 @@ const sendEmailHandler = (req, res) => {
         },
     });
 
-    // --- MODIFICADO: Template de E-mail atualizado ---
     const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
     const telefoneFormatado = telefone ? `<a href="https://wa.me/55${telefone}">${telefone}</a>` : 'Não informado';
 
-    // --- FORMATAÇÃO DO CORPO DO E-MAIL ---
     const mailOptions = {
         from: `Formulário de Indicação IA <${process.env.EMAIL_USER}>`,
         to: process.env.EMAIL_RECEIVER,
@@ -76,7 +78,6 @@ const sendEmailHandler = (req, res) => {
         attachments: [], 
     };
 
-    // Cria o anexo a partir da string Base64 (Sem alteração)
     if (imagem_base64) {
         const base64Data = imagem_base64.replace(/^data:image\/\w+;base64,/, "");
         const imageBuffer = Buffer.from(base64Data, 'base64');
@@ -88,7 +89,6 @@ const sendEmailHandler = (req, res) => {
         });
     }
 
-    // Envia o e-mail
     transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
             console.error('Erro ao enviar e-mail:', error);
