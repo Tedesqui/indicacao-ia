@@ -34,7 +34,7 @@
         }
         #initial-form-container {
             position: fixed;
-            /* Posição ajustada para cima */
+            /* ## LAYOUT: Movido 30px para cima (de 10px para -20px) para evitar corte ## */
             top: -20px; 
             left: 50%;
             transform: translateX(-50%); 
@@ -182,8 +182,10 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            /* Tamanho ajustado: 45px */
             width: 45px; 
             height: 45px;
+            /* Impede seleção de texto ao segurar */
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
@@ -200,17 +202,20 @@
             opacity: 1;
         }
         
+        /* Cresce 100% (scale 2.0) ao pressionar */
         .mic-btn:active {
              transform: translateY(-50%) scale(2.0);
              opacity: 1;
         }
 
         .mic-btn.is-listening img {
+             /* Filtro azul para feedback */
              filter: invert(50%) sepia(100%) saturate(500%) hue-rotate(180deg) brightness(100%);
         }
 
         .form-group-with-mic input[type="text"],
         .form-group-with-mic input[type="tel"] {
+            /* Espaço para o botão */
             padding-right: 55px;
         }
         /* --- FIM DO CSS DO MICROFONE --- */
@@ -222,7 +227,7 @@
     <canvas id="canvas"></canvas>
 
     <div class="container" id="initial-form-container">
-        <h1>Registre um Problema e envie para a Prefeitura</h1>
+        <h1>Registre um Problema e envie para o Vereador</h1>
         <form id="initial-form">
             
             <div class="form-group form-group-with-mic">
@@ -286,7 +291,7 @@
                 <span>📸 Capturar Imagem e Analisar Problema</span>
             </button>
             <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color);">
-                <span>✅ Enviar para a Prefeitura</span>
+                <span>✅ Enviar para o Vereador</span>
             </button>
         </form>
         
@@ -406,14 +411,15 @@
             
             const startRecognition = (inputEl, iconEl) => {
                 if (isListening) {
-                    recognition.abort();
+                    recognition.abort(); // Para um se o outro for clicado
                 }
 
                 targetInput = inputEl;
                 targetIcon = iconEl;
                 
+                // Vibração de 500ms
                 if (navigator.vibrate) {
-                    navigator.vibrate(200); 
+                    navigator.vibrate(500); 
                 }
 
                 try {
@@ -434,6 +440,7 @@
             };
 
             const addMicListeners = (button, input, icon) => {
+                // Pressionar
                 button.addEventListener('mousedown', (e) => {
                     e.preventDefault(); 
                     startRecognition(input, icon);
@@ -443,6 +450,7 @@
                     startRecognition(input, icon);
                 }, { passive: false });
                 
+                // Soltar
                 button.addEventListener('mouseup', stopRecognition);
                 button.addEventListener('touchend', stopRecognition);
                 button.addEventListener('mouseleave', stopRecognition); 
@@ -509,7 +517,6 @@
             }
         }
         
-        // ## A "PONTE" QUE RECEBE DADOS DO ANDROID ##
         function receiveLocationFromAndroid(latitude, longitude, streetAddress) {
             console.log("Localização recebida do Android:", latitude, longitude, streetAddress);
 
@@ -613,7 +620,6 @@
             resultDiv.style.display = 'none'; 
         });
 
-        // --- Funções de Botão (Sem alterações) ---
         function resetCaptureButton() {
             captureRestartButton.style.display = 'block';
             captureRestartButton.disabled = false;
@@ -665,13 +671,13 @@
                 statusText.style.display = 'block'; 
                 statusText.textContent = 'Capturando imagem...';
 
-                // ## CORREÇÃO CRÍTICA PARA VERCEL (Payload Size) ##
-                const MAX_WIDTH = 640; // Reduzido para evitar erro 413 (Payload Too Large)
+                // ## CORREÇÃO PARA VERCEL (Payload Size) ##
+                const MAX_WIDTH = 640; 
                 const scale = MAX_WIDTH / video.videoWidth;
                 canvas.width = MAX_WIDTH;
                 canvas.height = video.videoHeight * scale;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.5); // Qualidade reduzida para 0.5
+                capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.5); 
 
                 stopCameraStream();
                 previewImg.src = capturedImageBase64;
@@ -710,7 +716,7 @@
                 descricaoIaReview.value = sanitizedDescription;
                 reviewArea.style.display = 'block';
 
-                // ## MUDANÇA DE TEXTO ##
+                // ## TEXTO ATUALIZADO ##
                 statusText.innerHTML = `✅ **Problema Identificado:** ${problemaInput.value}. Revise o texto abaixo e clique em 'Enviar'.`;
                 
                 submitButton.style.display = 'block'; 
@@ -779,7 +785,7 @@
                 statusText.style.display = 'block';
             } finally {
                  submitButton.disabled = false;
-                 submitButton.querySelector('span').textContent = '✅ Enviar para a Prefeitura';
+                 submitButton.querySelector('span').textContent = '✅ Enviar para o Vereador';
             }
         });
 
@@ -789,6 +795,3 @@
     </script>
 </body>
 </html>
-
-
-
