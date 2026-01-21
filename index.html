@@ -49,24 +49,24 @@
         input[type="text"] {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
-            padding-right: 65px; /* Ajustado para o novo tamanho do mic de 60px */
+            padding-right: 65px;
         }
         textarea {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
         
-        /* BOTÃO DO MICROFONE (Aumentado em 10%) */
+        /* BOTÃO DO MICROFONE (60px) */
         .mic-btn {
             position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
             background: none; border: none; cursor: pointer; 
-            width: 60px; height: 60px; /* Aumentado de 55px para 60px */
+            width: 60px; height: 60px;
             display: flex; align-items: center; justify-content: center; z-index: 5;
         }
         .mic-btn img { width: 85%; height: 85%; object-fit: contain; pointer-events: none; }
         .mic-btn:active { transform: translateY(-50%) scale(1.1); }
         
-        /* TÍTULO (Aumentado em 10%) */
+        /* TÍTULO (1.65rem) */
         h1 { color: #000; text-align: center; margin-top: 0; margin-bottom: 1.5rem; font-weight: 700; font-size: 1.65rem; }
 
         #endereco-automatico-display {
@@ -151,7 +151,8 @@
 
         const startMic = (e) => {
             e.preventDefault();
-            if (navigator.vibrate) navigator.vibrate(60);
+            // AJUSTE: Vibração de 100ms
+            if (navigator.vibrate) navigator.vibrate(100);
             recognition.start();
         };
         const stopMic = () => recognition.stop();
