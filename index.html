@@ -6,23 +6,18 @@
     <title>Registre um Problema e envie para a Prefeitura</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #007BFF;
+            --primary: #007BFF;
             --primary-hover: #0056b3;
-            --background-color: #f4f7f9;
-            --form-background: #ffffff;
-            --text-color: #333;
-            --label-color: #555;
-            --border-color: #ccc;
-            --success-color: #28a745;
+            --bg: #f4f7f9;
+            --success: #28a745;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
+            background-color: var(--bg);
             margin: 0; padding: 0;
             min-height: 100vh;
             overflow: hidden;
@@ -30,286 +25,228 @@
             flex-direction: column;
         }
 
+        /* Vídeo da Câmera em Tela Cheia */
         video {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
             object-fit: cover; z-index: -1; display: none;
         }
 
-        canvas { display: none; }
-
         #initial-form-container {
-            position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-            background-color: var(--form-background); padding: 2rem; border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15); width: 95%; max-width: 550px;
+            position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+            background: #ffffff; padding: 2rem; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); width: 95%; max-width: 500px;
             box-sizing: border-box; z-index: 10;
         }
 
         h1 { 
-            color: #000; text-align: center; margin-top: 0; margin-bottom: 1.5rem; 
-            font-weight: 700; font-size: 1.65rem; line-height: 1.2;
+            font-size: 1.65rem; text-align: center; color: #000; 
+            margin: 0 0 1.5rem 0; font-weight: 700; line-height: 1.2;
         }
 
-        .form-group { margin-bottom: 20px; width: 100%; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
-        
-        .input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
+        .input-wrapper { position: relative; width: 100%; margin-bottom: 20px; }
         
         input[type="text"] {
-            width: 100%; padding: 0.9rem 1rem; border: 1px solid var(--border-color);
+            width: 100%; padding: 14px; border: 1px solid #ccc;
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
-            padding-right: 65px; /* Espaço para o microfone */
+            padding-right: 60px; /* Espaço para o microfone */
         }
 
-        #endereco-automatico-display {
-            width: 100%; padding: 0.9rem 1rem; border: 1px solid var(--border-color);
-            border-radius: 8px; box-sizing: border-box; background-color: #eeeeee; 
-            color: #444; min-height: 50px; display: flex; align-items: center; font-size: 0.95rem;
+        #endereco-display {
+            background: #eee; padding: 12px; border-radius: 8px;
+            font-size: 0.95rem; color: #555; margin-bottom: 20px;
+            min-height: 45px; display: flex; align-items: center;
+            border: 1px solid #ddd;
         }
 
         .mic-btn {
             position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
             background: none; border: none; cursor: pointer; 
-            width: 60px; height: 60px;
-            display: flex; align-items: center; justify-content: center; z-index: 5;
+            width: 55px; height: 55px; display: flex; align-items: center; justify-content: center;
         }
-        .mic-btn img { width: 85%; height: 85%; object-fit: contain; pointer-events: none; }
 
+        /* Interface de Captura Centralizada */
         #capture-ui {
             position: fixed; bottom: 0; left: 0; width: 100%; padding: 2rem 1rem;
             box-sizing: border-box;
-            background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.7), transparent);
-            color: white; text-align: center; z-index: 15; 
-            display: none; flex-direction: column; align-items: center; gap: 15px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.6), transparent);
+            display: none; flex-direction: column; align-items: center; 
+            gap: 15px; z-index: 20; text-align: center;
         }
 
         .submit-btn {
-            background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
-            color: white; padding: 1.2rem; border: none; border-radius: 8px;
-            cursor: pointer; width: 100%; max-width: 400px;
-            font-size: 1.1rem; font-weight: 700; text-transform: uppercase;
+            background: var(--primary); color: #fff; padding: 16px; 
+            border: none; border-radius: 8px; width: 100%; max-width: 400px;
+            font-weight: 700; font-size: 1.1rem; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         }
-        .submit-btn:disabled { background: #888; cursor: not-allowed; }
+        .submit-btn:disabled { background: #999; cursor: not-allowed; }
 
-        #preview-img {
-            max-width: 85%; max-height: 250px; border-radius: 10px; 
-            border: 3px solid white; display: none; margin-bottom: 10px;
+        #preview {
+            max-width: 85%; border-radius: 10px; border: 3px solid #fff;
+            display: none; margin-bottom: 10px;
         }
 
         #review-area { width: 100%; max-width: 400px; display: none; text-align: left; }
-        #review-area label { color: white; margin-bottom: 5px; }
-        #review-area textarea { 
+        #review-area label { color: white; font-size: 0.9rem; margin-bottom: 5px; display: block; }
+        textarea { 
             width: 100%; padding: 12px; border-radius: 8px; border: none; 
-            font-family: inherit; font-size: 1rem; color: #333;
+            font-family: inherit; font-size: 1rem; color: #333; box-sizing: border-box;
         }
 
-        .back-link {
-            background: none; border: none; color: white; text-decoration: underline;
-            cursor: pointer; font-size: 0.95rem; margin-top: 5px;
+        .link-voltar {
+            color: white; background: none; border: none; 
+            text-decoration: underline; cursor: pointer; font-size: 0.95rem;
         }
     </style>
 </head>
 <body>
 
 <video id="video" autoplay playsinline muted></video>
-<canvas id="canvas"></canvas>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <div id="initial-form-container">
     <h1>Registre um Problema e envie para a Prefeitura</h1>
     
-    <div class="form-group">
-        <label for="nome">Seu Nome Completo</label>
-        <div class="input-wrapper">
-            <input type="text" id="nome" name="nome" required autocomplete="off">
-            <button type="button" class="mic-btn" id="mic-nome">
-                <img src="pngegg.png" alt="Microfone">
-            </button>
-        </div>
+    <div class="input-wrapper">
+        <input type="text" id="nome" placeholder="Seu Nome Completo" autocomplete="off">
+        <button type="button" class="mic-btn" id="mic-nome">
+            <img src="pngegg.png" alt="Mic" width="45">
+        </button>
     </div>
 
-    <div class="form-group">
-        <label>Sua Localização Atual (GPS)</label>
-        <div id="endereco-automatico-display">Buscando localização...</div>
-    </div>
+    <div id="endereco-display">Aguardando sinal do GPS...</div>
 
-    <button type="button" class="submit-btn" id="start-camera-button" disabled>Aguardando GPS...</button>
+    <button id="start-btn" class="submit-btn" disabled>Aguardando GPS...</button>
 </div>
 
 <div id="capture-ui">
-    <img id="preview-img" alt="Prévia da captura">
-    <div id="status-text" style="font-weight: 600; margin-bottom: 5px;"></div>
+    <img id="preview" alt="Foto capturada">
     
     <div id="review-area">
-        <label>Análise da Inteligência Artificial:</label>
-        <textarea id="descricao_ia_review" rows="5"></textarea>
+        <label>Relatório elaborado pela IA:</label>
+        <textarea id="ia-text" rows="6"></textarea>
     </div>
 
-    <button type="button" class="submit-btn" id="capture-restart-button">
+    <button id="cap-btn" class="submit-btn">
         📸 Capturar Imagem e Analisar Problema
     </button>
     
-    <button id="submit-button" class="submit-btn" style="display:none; background: var(--success-color);">
+    <button id="send-btn" class="submit-btn" style="display:none; background: var(--success);">
         ✅ ENVIAR PARA WHATSAPP
     </button>
     
-    <button type="button" class="back-link" onclick="Android.reiniciarApp()">
+    <button type="button" class="link-voltar" onclick="voltarAoInicio()">
         Voltar ao Início
     </button>
 </div>
 
-
-
 <script>
-    const startCameraButton = document.getElementById('start-camera-button');
-    const nomeInput = document.getElementById('nome');
-    const enderecoDisplay = document.getElementById('endereco-automatico-display');
-    const captureUI = document.getElementById('capture-ui');
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const previewImg = document.getElementById("preview-img");
-    const statusText = document.getElementById('status-text');
-    const captureRestartButton = document.getElementById('capture-restart-button');
-    const submitButton = document.getElementById('submit-button');
-    const descricaoIaReview = document.getElementById('descricao_ia_review');
-    const micNomeButton = document.getElementById('mic-nome');
+    const nomeIn = document.getElementById('nome');
+    const startBtn = document.getElementById('start-btn');
+    const enderecoBox = document.getElementById('endereco-display');
+    const video = document.getElementById('video');
+    const capBtn = document.getElementById('cap-btn');
 
-    let latAtual = null, lonAtual = null;
-    let cameraStream = null;
-
-    // --- FILTRO SILENCIOSO DE PALAVRAS ---
-    const blockedWords = [
-        'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido',
-        'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar',
-        'mãe', 'denúncia', 'denuncia', 'caralho', 'ladrão', 'corrupto',
-        'idiota', 'imbecil', 'vtmnc', 'ladrões', 'ladrao', 'foder', 'fuder',
-        'vsf', 'merda', 'puta', 'bosta', 'foda', 'porra', 'viado', 'veado',
-        'buceta', 'cacete', 'chupa', 'chupar', 'pica', 'piru', 'pika', 'anus'
-    ];
-
-    nomeInput.addEventListener('input', function() {
-        let text = this.value;
-        blockedWords.forEach(word => {
-            const regex = new RegExp(`\\b${word}\\b`, 'gi');
-            if (regex.test(text)) {
-                this.value = text.replace(regex, '');
-            }
+    // --- 1. FILTRO SILENCIOSO DE PALAVRAS ---
+    const blocked = ['cu', 'fdp', 'puta', 'merda', 'porra', 'caralho', 'viado', 'cacete']; 
+    nomeIn.addEventListener('input', () => {
+        blocked.forEach(w => {
+            const regex = new RegExp(`\\b${w}\\b`, 'gi');
+            nomeIn.value = nomeIn.value.replace(regex, '');
         });
     });
 
-    // --- PONTE GPS (CHAMADA PELO KOTLIN) ---
-    function receiveLocationFromAndroid(latitude, longitude, address) {
-        latAtual = latitude;
-        lonAtual = longitude;
-        enderecoDisplay.textContent = address || "Localização Capturada";
-        startCameraButton.disabled = false;
-        startCameraButton.textContent = '▶️ Iniciar Câmera';
+    // --- 2. COMUNICAÇÃO COM ANDROID (REINICIAR) ---
+    function voltarAoInicio() {
+        if (window.Android && window.Android.reiniciarApp) {
+            Android.reiniciarApp();
+        } else {
+            location.reload();
+        }
     }
 
-    // --- LÓGICA DO MICROFONE (VOZ PARA TEXTO) ---
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'pt-BR';
-        recognition.interimResults = false;
+    // --- 3. RECEBER GPS DO KOTLIN ---
+    function receiveLocationFromAndroid(lat, lon, addr) {
+        window.lat = lat; window.lon = lon;
+        enderecoBox.textContent = addr || "Localização identificada";
+        startBtn.disabled = false;
+        startBtn.textContent = "▶️ Iniciar Câmera";
+    }
 
-        recognition.onresult = (event) => {
-            nomeInput.value = event.results[0][0].transcript;
-            nomeInput.dispatchEvent(new Event('input')); // Dispara filtro de palavras
+    // --- 4. MICROFONE COM VIBRAÇÃO (100ms) ---
+    const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (Speech) {
+        const rec = new Speech();
+        rec.lang = 'pt-BR';
+        rec.onresult = (e) => { 
+            nomeIn.value = e.results[0][0].transcript;
+            nomeIn.dispatchEvent(new Event('input')); 
         };
-
-        const startMic = (e) => {
+        const mic = document.getElementById('mic-nome');
+        mic.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (navigator.vibrate) navigator.vibrate(100);
-            recognition.start();
-        };
-
-        micNomeButton.addEventListener('mousedown', startMic);
-        micNomeButton.addEventListener('touchstart', startMic);
-        micNomeButton.addEventListener('mouseup', () => recognition.stop());
-        micNomeButton.addEventListener('touchend', () => recognition.stop());
+            rec.start();
+        });
+        mic.addEventListener('touchend', () => rec.stop());
     }
 
-    // --- CONTROLE DA CÂMERA ---
-    startCameraButton.addEventListener('click', async () => {
-        if (nomeInput.value.trim().length < 4) {
-            alert("Por favor, insira seu nome completo (mínimo de 4 caracteres).");
+    // --- 5. LÓGICA DA CÂMERA ---
+    startBtn.onclick = async () => {
+        if (nomeIn.value.trim().length < 4) {
+            alert("O nome deve ter pelo menos 4 caracteres.");
             return;
         }
-
         document.getElementById('initial-form-container').style.display = 'none';
-        captureUI.style.display = 'flex';
+        document.getElementById('capture-ui').style.display = 'flex';
         
-        try {
-            cameraStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: "environment" },
-                audio: false 
-            });
-            video.srcObject = cameraStream;
-            video.style.display = 'block';
-        } catch (err) {
-            alert("Erro ao acessar a câmera. Verifique as permissões.");
-            Android.reiniciarApp();
-        }
-    });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "environment" } 
+        });
+        video.srcObject = stream;
+        video.style.display = 'block';
+    };
 
-    // --- CAPTURAR E ANALISAR ---
-    captureRestartButton.addEventListener('click', async () => {
-        // Captura o frame do vídeo
+    // --- 6. CAPTURA E ANÁLISE IA ---
+    capBtn.onclick = async () => {
+        const canvas = document.getElementById('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        canvas.getContext("2d").drawImage(video, 0, 0);
-        const imgBase64 = canvas.toDataURL('image/jpeg', 0.6);
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const base64 = canvas.toDataURL('image/jpeg', 0.5);
 
-        // Para a câmera para economizar bateria
-        if (cameraStream) {
-            cameraStream.getTracks().forEach(track => track.stop());
-        }
+        // Para a câmera
+        video.srcObject.getTracks().forEach(t => t.stop());
         video.style.display = 'none';
-        
-        previewImg.src = imgBase64;
-        previewImg.style.display = 'block';
-        statusText.textContent = 'Aguarde, a IA está analisando...';
-        captureRestartButton.style.display = 'none';
+
+        document.getElementById('preview').src = base64;
+        document.getElementById('preview').style.display = 'block';
+        capBtn.textContent = "Analisando Problema...";
 
         try {
-            const response = await fetch('https://indicacao-ia.vercel.app/api/analyze-problem', {
+            const res = await fetch('https://indicacao-ia.vercel.app/api/analyze-problem', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    image: imgBase64, 
-                    latitude: latAtual, 
-                    longitude: lonAtual 
-                })
+                body: JSON.stringify({ image: base64, lat: window.lat, lon: window.lon })
             });
-
-            const data = await response.json();
+            const data = await res.json();
             
-            if (data.formal_description) {
-                descricaoIaReview.value = data.formal_description;
-                document.getElementById('review-area').style.display = 'block';
-                submitButton.style.display = 'block';
-                statusText.textContent = 'Análise concluída!';
-            } else {
-                throw new Error("Falha na análise");
-            }
-
-        } catch (error) {
-            statusText.textContent = 'Erro na análise. Tente novamente.';
-            captureRestartButton.textContent = '🔄 Tentar Novamente';
-            captureRestartButton.style.display = 'block';
+            document.getElementById('ia-text').value = data.formal_description;
+            document.getElementById('review-area').style.display = 'block';
+            document.getElementById('send-btn').style.display = 'block';
+            capBtn.style.display = 'none';
+        } catch (e) {
+            alert("Erro na conexão. Verifique sua internet.");
+            voltarAoInicio();
         }
-    });
+    };
 
-    // --- ENVIAR PARA ANDROID (WHATSAPP) ---
-    submitButton.addEventListener('click', () => {
-        if (window.Android && window.Android.enviarRelato) {
-            window.Android.enviarRelato(
-                nomeInput.value, 
-                "", 
-                enderecoDisplay.textContent, 
-                descricaoIaReview.value
-            );
+    // --- 7. ENVIO PARA WHATSAPP (VIA KOTLIN) ---
+    document.getElementById('send-btn').onclick = () => {
+        if (window.Android) {
+            Android.enviarRelato(nomeIn.value, "", enderecoBox.textContent, document.getElementById('ia-text').value);
         }
-    });
+    };
 </script>
 
 </body>
