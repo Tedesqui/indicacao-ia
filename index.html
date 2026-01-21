@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registre um problema - Second Vision</title>
+    <title>Registre um problema - SECOND VISION</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -106,7 +106,7 @@
         h1 { color: #000000; text-align: center; margin-top: 0; margin-bottom: 2rem; font-weight: 700; }
         .form-group { margin-bottom: 19px; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
-        input[type="text"], input[type="tel"], textarea, select {
+        input[type="text"], textarea, select {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
@@ -177,7 +177,7 @@
 <canvas id="canvas"></canvas>
 
 <div class="container" id="initial-form-container">
-    <h1>Registre um Problema Urbano</h1>
+    <h1>SECOND VISION</h1>
     <form id="initial-form">
 
         <div class="form-group">
@@ -191,7 +191,7 @@
         </div>
 
         <div class="form-group">
-            <label for="bairro_select">Selecione o Bairro</label>
+            <label for="bairro_select">Selecione o Bairro do Problema</label>
             <select id="bairro_select" required>
                 <option value="" disabled selected>Escolha o bairro...</option>
                 <option value="Frade">Frade</option>
@@ -204,17 +204,7 @@
         </div>
 
         <div class="form-group">
-            <label for="telefone">Seu WhatsApp</label>
-            <div class="input-wrapper">
-                <input type="tel" id="telefone" name="telefone" required placeholder="(XX) XXXXX-XXXX">
-                <button type="button" class="mic-btn" id="mic-telefone">
-                    <img id="mic-telefone-icon" src="pngegg.png" alt="Gravar telefone">
-                </button>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label for="endereco-automatico-display">Endereço do Problema (GPS)</label>
+            <label for="endereco-automatico-display">Sua Localização Atual (GPS)</label>
             <div id="endereco-automatico-display">
                 Buscando localização de alta precisão...
             </div>
@@ -225,14 +215,13 @@
         </button>
 
     </form>
-    <div id="form-result"></div>
 </div>
 
 <div id="capture-ui">
     <img id="preview-img" alt="Pré-visualização" />
     <div id="status-text"></div>
     <div id="review-area">
-        <label for="descricao_ia_review">Relatório gerado pela IA:</label>
+        <label for="descricao_ia_review">Relatório Gerado por IA:</label>
         <textarea id="descricao_ia_review" rows="6"></textarea>
     </div>
 
@@ -241,7 +230,7 @@
             <span>📸 Capturar Imagem e Analisar</span>
         </button>
         <button type="submit" class="submit-btn" id="submit-button" style="display:none; background-color: var(--success-color); margin-top: 10px;">
-            <span>✅ Enviar para WhatsApp</span>
+            <span>✅ ENVIAR PARA WHATSAPP</span>
         </button>
     </form>
 
@@ -257,12 +246,10 @@
 </div>
 
 <script>
-    // Elementos do DOM
     const initialFormContainer = document.getElementById('initial-form-container');
     const startCameraButton = document.getElementById('start-camera-button');
     const nomeInput = document.getElementById('nome');
     const bairroSelect = document.getElementById('bairro_select');
-    const telefoneInput = document.getElementById('telefone');
     const enderecoDisplay = document.getElementById('endereco-automatico-display');
     const captureUI = document.getElementById('capture-ui');
     const video = document.getElementById("video");
@@ -274,10 +261,9 @@
     const descricaoIaReview = document.getElementById('descricao_ia_review');
     const backButton = document.getElementById('back-button');
 
-    let capturedImageBase64 = null;
-    let cameraStream = null;
     let latAtual = "";
     let lonAtual = "";
+    let cameraStream = null;
 
     // Recebe Localização do Android
     function receiveLocationFromAndroid(latitude, longitude, streetAddress) {
@@ -288,7 +274,6 @@
         startCameraButton.querySelector('span').textContent = '▶️ Iniciar Câmera';
     }
 
-    // Configuração de Câmera
     async function startCamera() {
         cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         video.srcObject = cameraStream;
@@ -303,7 +288,6 @@
         }
     }
 
-    // Fluxo de Etapas
     startCameraButton.addEventListener('click', async () => {
         if(!nomeInput.value || !bairroSelect.value) {
             alert("Preencha seu nome e selecione o bairro!");
@@ -314,13 +298,12 @@
         await startCamera();
     });
 
-    // Captura e Análise com IA
     captureRestartButton.addEventListener('click', async () => {
         const ctx = canvas.getContext("2d");
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.drawImage(video, 0, 0);
-        capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.5);
+        const capturedImageBase64 = canvas.toDataURL('image/jpeg', 0.5);
         
         stopCamera();
         previewImg.src = capturedImageBase64;
@@ -346,7 +329,6 @@
         }
     });
 
-    // ## SUBMISSÃO PARA O WHATSAPP (PONTE ANDROID) ##
     document.getElementById('indication-form').addEventListener('submit', (e) => {
         e.preventDefault();
         
@@ -355,15 +337,17 @@
         const localizacao = enderecoDisplay.textContent;
         const descricao = descricaoIaReview.value;
 
-        // CHAMA A FUNÇÃO NO KOTLIN (MainActivity.kt)
+        // CHAMA A FUNÇÃO NO KOTLIN (SEM O CAMPO TELEFONE)
         if (window.Android && window.Android.enviarRelato) {
             window.Android.enviarRelato(nome, bairro, localizacao, descricao);
         } else {
-            alert("Erro: Interface Android não encontrada.");
+            alert("Erro de conexão com o sistema Android.");
         }
     });
 
-    backButton.addEventListener('click', () => location.reload());
+    backButton.addEventListener('click', () => {
+        location.reload();
+    });
 
 </script>
 </body>
