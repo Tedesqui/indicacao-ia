@@ -55,8 +55,6 @@
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
-        
-        /* BOTÃO DO MICROFONE (60px) */
         .mic-btn {
             position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
             background: none; border: none; cursor: pointer; 
@@ -66,7 +64,6 @@
         .mic-btn img { width: 85%; height: 85%; object-fit: contain; pointer-events: none; }
         .mic-btn:active { transform: translateY(-50%) scale(1.1); }
         
-        /* TÍTULO (1.65rem) */
         h1 { color: #000; text-align: center; margin-top: 0; margin-bottom: 1.5rem; font-weight: 700; font-size: 1.65rem; }
 
         #endereco-automatico-display {
@@ -92,7 +89,7 @@
         <div class="form-group">
             <label for="nome">Seu Nome Completo</label>
             <div class="input-wrapper">
-                <input type="text" id="nome" name="nome" required>
+                <input type="text" id="nome" name="nome" required autocomplete="off">
                 <button type="button" class="mic-btn" id="mic-nome">
                     <img src="pngegg.png" alt="Microfone">
                 </button>
@@ -121,8 +118,6 @@
     <button type="button" onclick="location.reload()" style="background: none; border: none; color: white; margin-top: 10px; text-decoration: underline;">Voltar</button>
 </div>
 
-
-
 <script>
     const startCameraButton = document.getElementById('start-camera-button');
     const nomeInput = document.getElementById('nome');
@@ -139,24 +134,30 @@
 
     let latAtual, lonAtual, cameraStream;
 
+    // --- LISTA DE PALAVRAS BLOQUEADAS ---
+    const blockedWords = [
+        'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido',
+        'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar',
+        'mãe', 'denúncia', 'denuncia', 'caralho', 'ladrão', 'corrupto',
+        'idiota', 'imbecil', 'vtmnc', 'ladrões', 'ladrao', 'foder', 'fuder',
+        'vsf', 'merda', 'puta', 'bosta', 'foda', 'porra', 'viado', 'veado',
+        'buceta', 'cacete', 'chupa', 'chupar', 'pica', 'piru', 'pika', 'anus'
+    ];
+
     // --- LÓGICA DO MICROFONE ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.lang = 'pt-BR';
-        
         recognition.onresult = (event) => {
             nomeInput.value = event.results[0][0].transcript;
         };
-
         const startMic = (e) => {
             e.preventDefault();
-            // AJUSTE: Vibração de 100ms
             if (navigator.vibrate) navigator.vibrate(100);
             recognition.start();
         };
         const stopMic = () => recognition.stop();
-
         micNomeButton.addEventListener('mousedown', startMic);
         micNomeButton.addEventListener('touchstart', startMic);
         micNomeButton.addEventListener('mouseup', stopMic);
@@ -171,8 +172,30 @@
         startCameraButton.textContent = '▶️ Iniciar Câmera';
     }
 
+    // --- VALIDAÇÃO DE NOME ---
+    function isNameValid(name) {
+        const cleanedName = name.trim().toLowerCase();
+        
+        // 1. Verifica tamanho mínimo
+        if (cleanedName.length < 4) {
+            alert("Por favor, digite seu nome completo (mínimo de 4 caracteres).");
+            return false;
+        }
+
+        // 2. Verifica palavras bloqueadas
+        for (let word of blockedWords) {
+            if (cleanedName.includes(word)) {
+                alert("O nome inserido contém termos não permitidos. Por favor, use seu nome real.");
+                nomeInput.value = ""; // Limpa o campo
+                return false;
+            }
+        }
+        return true;
+    }
+
     startCameraButton.addEventListener('click', async () => {
-        if(!nomeInput.value) return alert("Digite seu nome!");
+        if (!isNameValid(nomeInput.value)) return;
+
         document.getElementById('initial-form-container').style.display = 'none';
         captureUI.style.display = 'flex';
         cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
