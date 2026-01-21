@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Registre um Problema e envie para a Prefeitura</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -84,9 +82,8 @@
             color: #fff; padding: 16px; border: none; border-radius: 8px; 
             width: 100%; max-width: 400px; font-weight: 700; font-size: 1.1rem; 
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            /* Removido text-transform: uppercase */
         }
-        .submit-btn:disabled { background: #999; cursor: not-allowed; box-shadow: none; }
+        .submit-btn:disabled { background: #999; cursor: not-allowed; }
 
         #preview {
             max-width: 85%; border-radius: 10px; border: 3px solid #fff;
@@ -162,15 +159,13 @@
     const video = document.getElementById('video');
     const capBtn = document.getElementById('cap-btn');
 
-    window.onload = () => {
-        if (window.Android && window.Android.requestLocationUpdate) {
-            Android.requestLocationUpdate();
-        }
-    };
-
-    const blocked = ['cu', 'fdp', 'puta', 'merda', 'porra', 'caralho', 'viado', 'cacete']; 
+    // FILTRO DE NÚMEROS E PALAVRAS BLOQUEADAS
     nomeIn.addEventListener('input', () => {
         let text = nomeIn.value;
+        // Apaga números instantaneamente
+        text = text.replace(/[0-9]/g, '');
+        
+        const blocked = ['cu', 'fdp', 'puta', 'merda', 'porra', 'caralho', 'viado', 'cacete']; 
         blocked.forEach(w => {
             const regex = new RegExp(`\\b${w}\\b`, 'gi');
             text = text.replace(regex, '');
@@ -178,6 +173,7 @@
         nomeIn.value = text;
     });
 
+    // REINICIAR VIA ANDROID (Não abre o Chrome)
     function voltarAoInicio() {
         if (window.Android && window.Android.reiniciarApp) {
             Android.reiniciarApp();
@@ -190,7 +186,6 @@
         window.lat = lat; window.lon = lon;
         enderecoBox.textContent = addr || "Localização identificada";
         startBtn.disabled = false;
-        // Texto do botão corrigido aqui
         startBtn.textContent = "▶️ Iniciar câmera";
     }
 
@@ -275,4 +270,3 @@
 
 </body>
 </html>
-
