@@ -49,14 +49,12 @@
         input[type="text"] {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
-            padding-right: 65px; /* Espaço para o microfone de 60px */
+            padding-right: 65px;
         }
         textarea {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
-        
-        /* BOTÃO DO MICROFONE (60px) */
         .mic-btn {
             position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
             background: none; border: none; cursor: pointer; 
@@ -66,7 +64,6 @@
         .mic-btn img { width: 85%; height: 85%; object-fit: contain; pointer-events: none; }
         .mic-btn:active { transform: translateY(-50%) scale(1.1); }
         
-        /* TÍTULO (1.65rem) */
         h1 { color: #000; text-align: center; margin-top: 0; margin-bottom: 1.5rem; font-weight: 700; font-size: 1.65rem; }
 
         #endereco-automatico-display {
@@ -79,10 +76,7 @@
             color: white; padding: 1.2rem; border: none; border-radius: 8px;
             cursor: pointer; width: 100%; font-size: 1.1rem; font-weight: 600;
         }
-        .submit-btn:disabled { background: #aaa; cursor: not-allowed; }
-
         #review-area { display: none; text-align: left; background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; }
-        #review-area label { color: white; font-size: 0.9rem; margin-bottom: 5px; display: block; }
         #review-area textarea { color: #333; background: #fff; }
     </style>
 </head>
@@ -116,7 +110,7 @@
     <img id="preview-img" style="max-width: 90%; max-height: 200px; display: none; margin: auto; border-radius: 8px; border: 2px solid white;">
     <div id="status-text"></div>
     <div id="review-area">
-        <label>Relatório gerado pela IA:</label>
+        <label style="color: white; margin-bottom: 5px; display: block;">Texto gerado por IA:</label>
         <textarea id="descricao_ia_review" rows="6"></textarea>
     </div>
 
@@ -141,7 +135,7 @@
 
     let latAtual, lonAtual, cameraStream;
 
-    // --- LISTA DE PALAVRAS BLOQUEADAS ---
+    // LISTA DE PALAVRAS BLOQUEADAS
     const blockedWords = [
         'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido',
         'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar',
@@ -151,75 +145,65 @@
         'buceta', 'cacete', 'chupa', 'chupar', 'pica', 'piru', 'pika', 'anus'
     ];
 
-    // --- FILTRO DE PALAVRAS EM TEMPO REAL ---
+    // FILTRO SILENCIOSO DE PALAVRAS
     nomeInput.addEventListener('input', function() {
         let value = this.value;
         blockedWords.forEach(word => {
-            const regex = new RegExp(`\\b${word}\\b`, 'gi');
+            const regex = new RegExp(word, 'gi');
             if (regex.test(value)) {
                 this.value = value.replace(regex, '');
-                alert("O termo '" + word + "' não é permitido no cadastro.");
             }
         });
     });
 
-    // --- LÓGICA DO MICROFONE (Speech to Text) ---
+    // LÓGICA DO MICROFONE
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.lang = 'pt-BR';
         recognition.onresult = (event) => {
             nomeInput.value = event.results[0][0].transcript;
-            nomeInput.dispatchEvent(new Event('input')); // Dispara o filtro após a voz
+            nomeInput.dispatchEvent(new Event('input')); // Aplica o filtro após a voz
         };
-
         const startMic = (e) => {
             e.preventDefault();
-            if (navigator.vibrate) navigator.vibrate(100); // Vibração de 100ms
+            if (navigator.vibrate) navigator.vibrate(100);
             recognition.start();
         };
         const stopMic = () => recognition.stop();
-
         micNomeButton.addEventListener('mousedown', startMic);
         micNomeButton.addEventListener('touchstart', startMic);
         micNomeButton.addEventListener('mouseup', stopMic);
         micNomeButton.addEventListener('touchend', stopMic);
     }
 
-    // --- RECEBER GPS DO ANDROID ---
+    // RECEBER GPS
     function receiveLocationFromAndroid(latitude, longitude, address) {
         latAtual = latitude; lonAtual = longitude;
-        enderecoDisplay.textContent = address || "Localização capturada";
+        enderecoDisplay.textContent = address || "Localizado";
         startCameraButton.disabled = false;
         startCameraButton.textContent = '▶️ Iniciar Câmera';
     }
 
-    // --- INICIAR CÂMERA COM VALIDAÇÃO ---
+    // BOTÃO DE CÂMERA (COM ALERTA DE 4 CARACTERES)
     startCameraButton.addEventListener('click', async () => {
-        const nomeFinal = nomeInput.value.trim();
-        if (nomeFinal.length < 4) {
+        if (nomeInput.value.trim().length < 4) {
             alert("O nome deve ter pelo menos 4 caracteres.");
             return;
         }
-
         document.getElementById('initial-form-container').style.display = 'none';
         captureUI.style.display = 'flex';
         cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         video.srcObject = cameraStream; video.style.display = 'block'; video.play();
     });
 
-    // --- CAPTURA E ANÁLISE IA ---
     captureRestartButton.addEventListener('click', async () => {
         canvas.width = video.videoWidth; canvas.height = video.videoHeight;
         canvas.getContext("2d").drawImage(video, 0, 0);
         const imgBase64 = canvas.toDataURL('image/jpeg', 0.5);
-        
-        if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
-        video.style.display = 'none';
-        
+        stopCamera();
         previewImg.src = imgBase64; previewImg.style.display = 'block';
-        statusText.style.display = 'block';
-        statusText.textContent = 'Analisando imagem...';
+        statusText.textContent = 'IA analisando...';
 
         try {
             const res = await fetch('https://indicacao-ia.vercel.app/api/analyze-problem', {
@@ -230,17 +214,18 @@
             const data = await res.json();
             descricaoIaReview.value = data.formal_description;
             document.getElementById('review-area').style.display = 'block';
-            statusText.textContent = 'Problema identificado!';
+            statusText.textContent = 'Análise concluída!';
             submitButton.style.display = 'block';
-            captureRestartButton.textContent = '🔄 Tirar outra foto';
-        } catch (e) { 
-            statusText.textContent = 'Erro ao analisar. Tente novamente.'; 
-        }
+        } catch (e) { statusText.textContent = 'Erro na análise.'; }
     });
 
-    // --- ENVIO FINAL PARA WHATSAPP ---
+    function stopCamera() {
+        if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+        video.style.display = 'none';
+    }
+
     submitButton.addEventListener('click', () => {
-        if (window.Android && window.Android.enviarRelato) {
+        if (window.Android) {
             window.Android.enviarRelato(nomeInput.value, "", enderecoDisplay.textContent, descricaoIaReview.value);
         }
     });
