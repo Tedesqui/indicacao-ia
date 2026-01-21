@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Problemas Urbanos</title>
+    <title>Registre um Problema e envie para a Prefeitura</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -34,7 +34,7 @@
         #initial-form-container {
             position: fixed; top: -20px; left: 50%; transform: translateX(-50%);
             background-color: var(--form-background); padding: 2.5rem; border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); width: 90%; max-width: 650px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); width: 95%; max-width: 650px;
             box-sizing: border-box; z-index: 10; display: flex; flex-direction: column;
         }
         #capture-ui {
@@ -47,25 +47,35 @@
         
         /* --- ESTILO DO INPUT COM MICROFONE --- */
         .input-wrapper { position: relative; display: flex; align-items: center; }
-        input[type="text"], textarea {
+        input[type="text"] {
+            width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
+            border-radius: 8px; box-sizing: border-box; font-size: 1rem;
+            padding-right: 70px; /* Espaço aumentado para o microfone maior */
+        }
+        textarea {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
+        
+        /* BOTÃO DO MICROFONE (Aumentado em 50%) */
         .mic-btn {
-            position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
-            background: none; border: none; cursor: pointer; width: 45px; height: 45px;
+            position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer; 
+            width: 68px; height: 68px; /* Era 45px, agora ~68px */
             display: flex; align-items: center; justify-content: center; z-index: 5;
         }
-        .mic-btn img { width: 80%; height: 80%; object-fit: contain; pointer-events: none; }
-        .mic-btn:active { transform: translateY(-50%) scale(1.5); }
+        .mic-btn img { width: 90%; height: 90%; object-fit: contain; pointer-events: none; }
+        .mic-btn:active { transform: translateY(-50%) scale(1.2); }
         
+        h1 { color: #000; text-align: center; margin-top: 0; margin-bottom: 1.5rem; font-weight: 700; font-size: 1.5rem; }
+
         #endereco-automatico-display {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; background-color: #f0f0f0; color: #555;
         }
         .submit-btn {
             background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
-            color: white; padding: 1rem; border: none; border-radius: 8px;
+            color: white; padding: 1.2rem; border: none; border-radius: 8px;
             cursor: pointer; width: 100%; font-size: 1.1rem; font-weight: 600;
         }
         #review-area { display: none; text-align: left; background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; }
@@ -77,12 +87,12 @@
 <canvas id="canvas"></canvas>
 
 <div class="container" id="initial-form-container">
-    <h1>Problemas Urbanos</h1>
+    <h1>Registre um Problema e envie para a Prefeitura</h1>
     <form id="initial-form">
         <div class="form-group">
             <label for="nome">Seu Nome Completo</label>
             <div class="input-wrapper">
-                <input type="text" id="nome" name="nome" required>
+                <input type="text" id="nome" name="nome" required placeholder="Digite ou use o microfone">
                 <button type="button" class="mic-btn" id="mic-nome">
                     <img src="pngegg.png" alt="Microfone">
                 </button>
@@ -111,8 +121,6 @@
     <button type="button" onclick="location.reload()" style="background: none; border: none; color: white; margin-top: 10px; text-decoration: underline;">Voltar</button>
 </div>
 
-
-
 <script>
     const startCameraButton = document.getElementById('start-camera-button');
     const nomeInput = document.getElementById('nome');
@@ -129,7 +137,7 @@
 
     let latAtual, lonAtual, cameraStream;
 
-    // --- LÓGICA DO MICROFONE (VOZ PARA TEXTO) ---
+    // --- LÓGICA DO MICROFONE ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
@@ -141,10 +149,9 @@
 
         const startMic = (e) => {
             e.preventDefault();
-            if (navigator.vibrate) navigator.vibrate(50);
+            if (navigator.vibrate) navigator.vibrate(60);
             recognition.start();
         };
-
         const stopMic = () => recognition.stop();
 
         micNomeButton.addEventListener('mousedown', startMic);
