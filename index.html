@@ -49,24 +49,25 @@
         input[type="text"] {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
-            padding-right: 60px; /* Ajustado para o novo tamanho do mic */
+            padding-right: 65px; /* Ajustado para o novo tamanho do mic de 60px */
         }
         textarea {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
         
-        /* BOTÃO DO MICROFONE (Reduzido em 20%) */
+        /* BOTÃO DO MICROFONE (Aumentado em 10%) */
         .mic-btn {
             position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
             background: none; border: none; cursor: pointer; 
-            width: 55px; height: 55px; /* Reduzido de 68px para 55px */
+            width: 60px; height: 60px; /* Aumentado de 55px para 60px */
             display: flex; align-items: center; justify-content: center; z-index: 5;
         }
         .mic-btn img { width: 85%; height: 85%; object-fit: contain; pointer-events: none; }
         .mic-btn:active { transform: translateY(-50%) scale(1.1); }
         
-        h1 { color: #000; text-align: center; margin-top: 0; margin-bottom: 1.5rem; font-weight: 700; font-size: 1.5rem; }
+        /* TÍTULO (Aumentado em 10%) */
+        h1 { color: #000; text-align: center; margin-top: 0; margin-bottom: 1.5rem; font-weight: 700; font-size: 1.65rem; }
 
         #endereco-automatico-display {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
@@ -91,7 +92,8 @@
         <div class="form-group">
             <label for="nome">Seu Nome Completo</label>
             <div class="input-wrapper">
-                <input type="text" id="nome" name="nome" required> <button type="button" class="mic-btn" id="mic-nome">
+                <input type="text" id="nome" name="nome" required>
+                <button type="button" class="mic-btn" id="mic-nome">
                     <img src="pngegg.png" alt="Microfone">
                 </button>
             </div>
@@ -118,6 +120,8 @@
     <button id="submit-button" class="submit-btn" style="display:none; background: #28a745; margin-top: 10px;">✅ ENVIAR PARA WHATSAPP</button>
     <button type="button" onclick="location.reload()" style="background: none; border: none; color: white; margin-top: 10px; text-decoration: underline;">Voltar</button>
 </div>
+
+
 
 <script>
     const startCameraButton = document.getElementById('start-camera-button');
