@@ -3,239 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registre um Problema e envie para a Prefeitura</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Registre um Problema</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #007BFF;
-            --primary-hover: #0056b3;
-            --background-color: #f4f7f9;
-            --form-background: #ffffff;
-            --text-color: #333;
-            --label-color: #555;
-            --border-color: #ccc;
-            --success-color: #28a745;
-            --error-color: #dc3545;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            margin: 0; padding: 0;
-            min-height: 100vh;
-            overflow: hidden;
-        }
-        video, canvas {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1;
-            display: none;
-        }
+        :root { --primary: #007BFF; --bg: #f4f7f9; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; overflow: hidden; }
+        video { position: fixed; top: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; display: none; }
         #initial-form-container {
-            position: fixed; top: -20px; left: 50%; transform: translateX(-50%);
-            background-color: var(--form-background); padding: 2.5rem; border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); width: 95%; max-width: 650px;
-            box-sizing: border-box; z-index: 10; display: flex; flex-direction: column;
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #fff; padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1); z-index: 10;
         }
-        /* AJUSTE DE CENTRALIZAÇÃO AQUI */
         #capture-ui {
-            position: fixed; bottom: 0; left: 0; width: 100%; padding: 1.5rem 1rem;
-            box-sizing: border-box; /* Garante que o padding não afete a largura total */
-            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.7), transparent);
-            color: white; text-align: center; z-index: 5; 
-            display: none; flex-direction: column; 
-            align-items: center; /* Centraliza os itens filhos horizontalmente */
-            gap: 12px;
+            position: fixed; bottom: 0; width: 100%; padding: 2rem 1rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            display: none; flex-direction: column; align-items: center; gap: 15px; box-sizing: border-box;
         }
-        .form-group { margin-bottom: 19px; width: 100%; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); text-align: left; }
-        
-        .input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
-        input[type="text"] {
-            width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
-            border-radius: 8px; box-sizing: border-box; font-size: 1rem;
-            padding-right: 65px;
-        }
-        textarea {
-            width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
-            border-radius: 8px; box-sizing: border-box; font-size: 1rem;
-        }
-        .mic-btn {
-            position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
-            background: none; border: none; cursor: pointer; 
-            width: 60px; height: 60px;
-            display: flex; align-items: center; justify-content: center; z-index: 5;
-        }
-        .mic-btn img { width: 85%; height: 85%; object-fit: contain; pointer-events: none; }
-        
-        h1 { color: #000; text-align: center; margin-top: 0; margin-bottom: 1.5rem; font-weight: 700; font-size: 1.65rem; }
-
-        #endereco-automatico-display {
-            width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
-            border-radius: 8px; box-sizing: border-box; background-color: #f0f0f0; color: #555;
-            min-height: 50px; display: flex; align-items: center;
-        }
+        .input-wrapper { position: relative; width: 100%; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        .mic-btn { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: none; border: none; width: 50px; height: 50px; }
         .submit-btn {
-            background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
-            color: white; padding: 1.2rem; border: none; border-radius: 8px;
-            cursor: pointer; width: 100%; max-width: 400px;
-            font-size: 1.1rem; font-weight: 600;
-            /* margin: 0 auto;  <- Removido pois o align-items: center do pai já resolve */
+            background: var(--primary); color: #fff; padding: 15px; border: none; border-radius: 8px;
+            width: 100%; max-width: 350px; font-weight: 700; cursor: pointer;
         }
-        #review-area { display: none; text-align: left; background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; width: 100%; max-width: 400px; box-sizing: border-box; }
-        #review-area label { color: white; margin-bottom: 5px; display: block; }
-        #review-area textarea { color: #333; background: #fff; }
+        h1 { font-size: 1.65rem; text-align: center; }
+        textarea { width: 100%; border-radius: 8px; padding: 10px; }
     </style>
 </head>
 <body>
 <video id="video" autoplay playsinline muted></video>
-<canvas id="canvas"></canvas>
-
-<div class="container" id="initial-form-container">
+<div id="initial-form-container">
     <h1>Registre um Problema e envie para a Prefeitura</h1>
-    <form id="initial-form">
-        <div class="form-group">
-            <label for="nome">Seu Nome Completo</label>
-            <div class="input-wrapper">
-                <input type="text" id="nome" name="nome" required autocomplete="off">
-                <button type="button" class="mic-btn" id="mic-nome">
-                    <img src="pngegg.png" alt="Microfone">
-                </button>
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label>Sua Localização Atual (GPS)</label>
-            <div id="endereco-automatico-display">Buscando localização...</div>
-        </div>
-
-        <button type="button" class="submit-btn" id="start-camera-button" disabled>Aguardando GPS...</button>
-    </form>
+    <input type="text" id="nome" placeholder="Seu Nome Completo" autocomplete="off">
+    <button type="button" class="mic-btn" id="mic-nome"><img src="pngegg.png" width="40"></button>
+    <div id="endereco-display" style="margin: 15px 0; font-size: 0.9rem; color: #666;">Buscando GPS...</div>
+    <button id="start-btn" class="submit-btn" disabled>Aguardando GPS...</button>
 </div>
 
 <div id="capture-ui">
-    <img id="preview-img" style="max-width: 90%; max-height: 200px; display: none; margin: 10px auto; border-radius: 8px; border: 2px solid white;">
-    <div id="status-text" style="margin-bottom: 5px;"></div>
-    
-    <div id="review-area">
-        <label>Texto gerado por IA:</label>
-        <textarea id="descricao_ia_review" rows="6"></textarea>
+    <img id="preview" style="max-width: 80%; border-radius: 8px; display: none;">
+    <div id="review-area" style="display:none; width: 100%; max-width: 350px;">
+        <textarea id="ia-text" rows="5"></textarea>
     </div>
-
-    <button type="button" class="submit-btn" id="capture-restart-button">
-        📸 Capturar Imagem e Analisar Problema
-    </button>
-    
-    <button id="submit-button" class="submit-btn" style="display:none; background: var(--success-color);">
-        ✅ ENVIAR PARA WHATSAPP
-    </button>
-    
-    <button type="button" onclick="location.reload()" style="background: none; border: none; color: white; margin-top: 5px; text-decoration: underline; font-size: 0.9rem;">
-        Voltar ao Início
-    </button>
+    <button id="cap-btn" class="submit-btn">📸 Capturar Imagem e Analisar Problema</button>
+    <button id="send-btn" class="submit-btn" style="display:none; background: #28a745;">✅ ENVIAR WHATSAPP</button>
+    <button onclick="Android.reiniciarApp()" style="color:white; background:none; border:none; text-decoration:underline;">Voltar ao Início</button>
 </div>
 
 <script>
-    const startCameraButton = document.getElementById('start-camera-button');
-    const nomeInput = document.getElementById('nome');
-    const enderecoDisplay = document.getElementById('endereco-automatico-display');
-    const captureUI = document.getElementById('capture-ui');
-    const video = document.getElementById("video");
-    const canvas = document.getElementById("canvas");
-    const previewImg = document.getElementById("preview-img");
-    const statusText = document.getElementById('status-text');
-    const captureRestartButton = document.getElementById('capture-restart-button');
-    const submitButton = document.getElementById('submit-button');
-    const descricaoIaReview = document.getElementById('descricao_ia_review');
-    const micNomeButton = document.getElementById('mic-nome');
+    const nomeIn = document.getElementById('nome');
+    const blocked = ['cu', 'fdp', 'puta', 'merda', 'porra', 'caralho']; // Adicione as outras aqui
 
-    let latAtual, lonAtual, cameraStream;
+    nomeIn.addEventListener('input', () => {
+        blocked.forEach(w => { nomeIn.value = nomeIn.value.replace(new RegExp(w, 'gi'), ''); });
+    });
 
-    const blockedWords = [
-        'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido',
-        'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar',
-        'mãe', 'denúncia', 'denuncia', 'caralho', 'ladrão', 'corrupto',
-        'idiota', 'imbecil', 'vtmnc', 'ladrões', 'ladrao', 'foder', 'fuder',
-        'vsf', 'merda', 'puta', 'bosta', 'foda', 'porra', 'viado', 'veado',
-        'buceta', 'cacete', 'chupa', 'chupar', 'pica', 'piru', 'pika', 'anus'
-    ];
-
-    nomeInput.addEventListener('input', function() {
-        let value = this.value;
-        blockedWords.forEach(word => {
-            const regex = new RegExp(word, 'gi');
-            if (regex.test(value)) {
-                this.value = value.replace(regex, '');
-            }
+    const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (Speech) {
+        const rec = new Speech();
+        rec.lang = 'pt-BR';
+        rec.onresult = (e) => { nomeIn.value = e.results[0][0].transcript; };
+        document.getElementById('mic-nome').addEventListener('touchstart', () => { 
+            if (navigator.vibrate) navigator.vibrate(100); 
+            rec.start(); 
         });
-    });
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'pt-BR';
-        recognition.onresult = (event) => {
-            nomeInput.value = event.results[0][0].transcript;
-            nomeInput.dispatchEvent(new Event('input'));
-        };
-        const startMic = (e) => {
-            e.preventDefault();
-            if (navigator.vibrate) navigator.vibrate(100);
-            recognition.start();
-        };
-        micNomeButton.addEventListener('mousedown', startMic);
-        micNomeButton.addEventListener('touchstart', startMic);
-        micNomeButton.addEventListener('mouseup', () => recognition.stop());
-        micNomeButton.addEventListener('touchend', () => recognition.stop());
+        document.getElementById('mic-nome').addEventListener('touchend', () => rec.stop());
     }
 
-    function receiveLocationFromAndroid(latitude, longitude, address) {
-        latAtual = latitude; lonAtual = longitude;
-        enderecoDisplay.textContent = address || "Localizado";
-        startCameraButton.disabled = false;
-        startCameraButton.textContent = '▶️ Iniciar Câmera';
+    function receiveLocationFromAndroid(lat, lon, addr) {
+        document.getElementById('endereco-display').textContent = addr;
+        document.getElementById('start-btn').disabled = false;
+        document.getElementById('start-btn').textContent = "▶️ Iniciar Câmera";
     }
 
-    startCameraButton.addEventListener('click', async () => {
-        if (nomeInput.value.trim().length < 4) {
-            alert("O nome deve ter pelo menos 4 caracteres.");
-            return;
-        }
+    document.getElementById('start-btn').onclick = async () => {
+        if (nomeIn.value.length < 4) return alert("O nome deve ter 4+ caracteres.");
         document.getElementById('initial-form-container').style.display = 'none';
-        captureUI.style.display = 'flex';
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-        video.srcObject = cameraStream; video.style.display = 'block'; video.play();
-    });
+        document.getElementById('capture-ui').style.display = 'flex';
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        document.getElementById('video').srcObject = stream;
+        document.getElementById('video').style.display = 'block';
+    };
 
-    captureRestartButton.addEventListener('click', async () => {
+    document.getElementById('cap-btn').onclick = async () => {
+        const canvas = document.createElement('canvas');
+        const video = document.getElementById('video');
         canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-        canvas.getContext("2d").drawImage(video, 0, 0);
-        const imgBase64 = canvas.toDataURL('image/jpeg', 0.5);
-        if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const base64 = canvas.toDataURL('image/jpeg', 0.5);
+        
         video.style.display = 'none';
-        previewImg.src = imgBase64; previewImg.style.display = 'block';
-        statusText.textContent = 'IA analisando...';
+        document.getElementById('preview').src = base64;
+        document.getElementById('preview').style.display = 'block';
+        
+        const res = await fetch('https://indicacao-ia.vercel.app/api/analyze-problem', {
+            method: 'POST',
+            body: JSON.stringify({ image: base64 })
+        });
+        const data = await res.json();
+        document.getElementById('ia-text').value = data.formal_description;
+        document.getElementById('review-area').style.display = 'block';
+        document.getElementById('send-btn').style.display = 'block';
+    };
 
-        try {
-            const res = await fetch('https://indicacao-ia.vercel.app/api/analyze-problem', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: imgBase64, latitude: latAtual, longitude: lonAtual })
-            });
-            const data = await res.json();
-            descricaoIaReview.value = data.formal_description;
-            document.getElementById('review-area').style.display = 'block';
-            statusText.textContent = 'Análise concluída!';
-            submitButton.style.display = 'block';
-            captureRestartButton.textContent = '🔄 Tirar outra foto';
-        } catch (e) { statusText.textContent = 'Erro na análise.'; }
-    });
-
-    submitButton.addEventListener('click', () => {
-        if (window.Android) {
-            window.Android.enviarRelato(nomeInput.value, "", enderecoDisplay.textContent, descricaoIaReview.value);
-        }
-    });
+    document.getElementById('send-btn').onclick = () => {
+        Android.enviarRelato(nomeIn.value, "", document.getElementById('endereco-display').textContent, document.getElementById('ia-text').value);
+    };
 </script>
 </body>
 </html>
