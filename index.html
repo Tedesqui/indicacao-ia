@@ -3,81 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registre um Problema</title>
+    <title>Problemas Urbanos</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #007BFF; --bg: #f4f7f9; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; overflow: hidden; }
-        video { position: fixed; top: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; display: none; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); margin: 0; padding: 0; overflow: hidden; }
+        video { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; display: none; }
+        
         #initial-form-container {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #fff; padding: 2rem; border-radius: 12px; width: 90%; max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1); z-index: 10;
+            position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+            background: #fff; padding: 2rem; border-radius: 12px; width: 95%; max-width: 500px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1); z-index: 10; box-sizing: border-box;
         }
+
         #capture-ui {
-            position: fixed; bottom: 0; width: 100%; padding: 2rem 1rem;
-            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-            display: none; flex-direction: column; align-items: center; gap: 15px; box-sizing: border-box;
+            position: fixed; bottom: 0; left: 0; width: 100%; padding: 2rem 1rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.95), rgba(0,0,0,0.7), transparent);
+            display: none; flex-direction: column; align-items: center; gap: 15px; box-sizing: border-box; z-index: 15;
         }
-        .input-wrapper { position: relative; width: 100%; }
-        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
-        .mic-btn { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: none; border: none; width: 50px; height: 50px; }
+
+        .input-wrapper { position: relative; width: 100%; margin: 15px 0; }
+        input[type="text"] { width: 100%; padding: 14px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; padding-right: 60px; font-size: 1rem; }
+        .mic-btn { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); background: none; border: none; width: 55px; height: 55px; cursor: pointer; }
+        
         .submit-btn {
-            background: var(--primary); color: #fff; padding: 15px; border: none; border-radius: 8px;
-            width: 100%; max-width: 350px; font-weight: 700; cursor: pointer;
+            background: var(--primary); color: #fff; padding: 16px; border: none; border-radius: 8px;
+            width: 100%; max-width: 400px; font-weight: 700; font-size: 1.1rem; cursor: pointer;
         }
-        h1 { font-size: 1.65rem; text-align: center; }
-        textarea { width: 100%; border-radius: 8px; padding: 10px; }
+
+        h1 { font-size: 1.65rem; text-align: center; color: #000; margin-bottom: 20px; }
+        #endereco-display { margin-bottom: 20px; font-size: 0.95rem; color: #555; background: #eee; padding: 10px; border-radius: 6px; min-height: 40px; }
+        
+        #review-area { width: 100%; max-width: 400px; display: none; text-align: left; }
+        textarea { width: 100%; border-radius: 8px; padding: 12px; font-family: inherit; font-size: 1rem; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
 <video id="video" autoplay playsinline muted></video>
+<canvas id="canvas" style="display:none;"></canvas>
+
 <div id="initial-form-container">
     <h1>Registre um Problema e envie para a Prefeitura</h1>
-    <input type="text" id="nome" placeholder="Seu Nome Completo" autocomplete="off">
-    <button type="button" class="mic-btn" id="mic-nome"><img src="pngegg.png" width="40"></button>
-    <div id="endereco-display" style="margin: 15px 0; font-size: 0.9rem; color: #666;">Buscando GPS...</div>
+    <div class="input-wrapper">
+        <input type="text" id="nome" placeholder="Seu Nome Completo" autocomplete="off">
+        <button type="button" class="mic-btn" id="mic-nome"><img src="pngegg.png" width="45"></button>
+    </div>
+    <div id="endereco-display">Buscando sua localização...</div>
     <button id="start-btn" class="submit-btn" disabled>Aguardando GPS...</button>
 </div>
 
 <div id="capture-ui">
-    <img id="preview" style="max-width: 80%; border-radius: 8px; display: none;">
-    <div id="review-area" style="display:none; width: 100%; max-width: 350px;">
+    <img id="preview" style="max-width: 85%; border-radius: 10px; border: 2px solid #fff; display: none; margin-bottom: 10px;">
+    <div id="review-area">
+        <label style="color:white; display:block; margin-bottom:5px;">Descrição da IA:</label>
         <textarea id="ia-text" rows="5"></textarea>
     </div>
     <button id="cap-btn" class="submit-btn">📸 Capturar Imagem e Analisar Problema</button>
-    <button id="send-btn" class="submit-btn" style="display:none; background: #28a745;">✅ ENVIAR WHATSAPP</button>
-    <button onclick="Android.reiniciarApp()" style="color:white; background:none; border:none; text-decoration:underline;">Voltar ao Início</button>
+    <button id="send-btn" class="submit-btn" style="display:none; background: #28a745;">✅ ENVIAR PARA WHATSAPP</button>
+    <button type="button" onclick="Android.reiniciarApp()" style="color:white; background:none; border:none; text-decoration:underline; cursor:pointer; font-size:0.9rem;">Voltar ao Início</button>
 </div>
 
 <script>
     const nomeIn = document.getElementById('nome');
-    const blocked = ['cu', 'fdp', 'puta', 'merda', 'porra', 'caralho']; // Adicione as outras aqui
+    const startBtn = document.getElementById('start-btn');
+    const blocked = ['cu', 'fdp', 'puta', 'merda', 'porra', 'caralho', 'viado'];
 
+    // Filtro silencioso
     nomeIn.addEventListener('input', () => {
         blocked.forEach(w => { nomeIn.value = nomeIn.value.replace(new RegExp(w, 'gi'), ''); });
     });
+
+    // Função que o Android chama
+    function receiveLocationFromAndroid(lat, lon, addr) {
+        window.lat = lat; window.lon = lon;
+        document.getElementById('endereco-display').textContent = addr;
+        startBtn.disabled = false;
+        startBtn.textContent = "▶️ Iniciar Câmera";
+    }
+
+    // Solicita GPS se o display não atualizar em 5 segundos
+    setTimeout(() => {
+        if(startBtn.disabled && window.Android) Android.requestLocationUpdate();
+    }, 5000);
 
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (Speech) {
         const rec = new Speech();
         rec.lang = 'pt-BR';
-        rec.onresult = (e) => { nomeIn.value = e.results[0][0].transcript; };
-        document.getElementById('mic-nome').addEventListener('touchstart', () => { 
-            if (navigator.vibrate) navigator.vibrate(100); 
-            rec.start(); 
-        });
-        document.getElementById('mic-nome').addEventListener('touchend', () => rec.stop());
+        rec.onresult = (e) => { nomeIn.value = e.results[0][0].transcript; nomeIn.dispatchEvent(new Event('input')); };
+        const btn = document.getElementById('mic-nome');
+        const trigger = () => { if(navigator.vibrate) navigator.vibrate(100); rec.start(); };
+        btn.addEventListener('touchstart', trigger); btn.addEventListener('mousedown', trigger);
+        btn.addEventListener('touchend', () => rec.stop()); btn.addEventListener('mouseup', () => rec.stop());
     }
 
-    function receiveLocationFromAndroid(lat, lon, addr) {
-        document.getElementById('endereco-display').textContent = addr;
-        document.getElementById('start-btn').disabled = false;
-        document.getElementById('start-btn').textContent = "▶️ Iniciar Câmera";
-    }
-
-    document.getElementById('start-btn').onclick = async () => {
-        if (nomeIn.value.length < 4) return alert("O nome deve ter 4+ caracteres.");
+    startBtn.onclick = async () => {
+        if (nomeIn.value.trim().length < 4) return alert("O nome deve ter pelo menos 4 caracteres.");
         document.getElementById('initial-form-container').style.display = 'none';
         document.getElementById('capture-ui').style.display = 'flex';
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
@@ -86,24 +107,32 @@
     };
 
     document.getElementById('cap-btn').onclick = async () => {
-        const canvas = document.createElement('canvas');
+        const canvas = document.getElementById('canvas');
         const video = document.getElementById('video');
         canvas.width = video.videoWidth; canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0);
         const base64 = canvas.toDataURL('image/jpeg', 0.5);
         
+        video.srcObject.getTracks().forEach(t => t.stop());
         video.style.display = 'none';
         document.getElementById('preview').src = base64;
         document.getElementById('preview').style.display = 'block';
-        
-        const res = await fetch('https://indicacao-ia.vercel.app/api/analyze-problem', {
-            method: 'POST',
-            body: JSON.stringify({ image: base64 })
-        });
-        const data = await res.json();
-        document.getElementById('ia-text').value = data.formal_description;
-        document.getElementById('review-area').style.display = 'block';
-        document.getElementById('send-btn').style.display = 'block';
+        document.getElementById('cap-btn').textContent = "Analisando...";
+
+        try {
+            const res = await fetch('https://indicacao-ia.vercel.app/api/analyze-problem', {
+                method: 'POST',
+                body: JSON.stringify({ image: base64, lat: window.lat, lon: window.lon })
+            });
+            const data = await res.json();
+            document.getElementById('ia-text').value = data.formal_description;
+            document.getElementById('review-area').style.display = 'block';
+            document.getElementById('send-btn').style.display = 'block';
+            document.getElementById('cap-btn').style.display = 'none';
+        } catch(e) { 
+            alert("Erro na análise. Tente novamente.");
+            Android.reiniciarApp();
+        }
     };
 
     document.getElementById('send-btn').onclick = () => {
