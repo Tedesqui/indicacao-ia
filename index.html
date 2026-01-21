@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Registre um Problema e envie para a Prefeitura</title>
+    <title>Registre um Problema - Prefeitura</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -44,6 +44,7 @@
         }
 
         .form-group { margin-bottom: 22px; width: 100%; }
+        
         label { 
             display: block; margin-bottom: 8px; font-weight: 600; 
             color: var(--label-color); font-size: 0.95rem;
@@ -83,9 +84,9 @@
             color: #fff; padding: 16px; border: none; border-radius: 8px; 
             width: 100%; max-width: 400px; font-weight: 700; font-size: 1.1rem; 
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            text-transform: uppercase;
+            /* Removido text-transform: uppercase */
         }
-        .submit-btn:disabled { background: #999; cursor: not-allowed; }
+        .submit-btn:disabled { background: #999; cursor: not-allowed; box-shadow: none; }
 
         #preview {
             max-width: 85%; border-radius: 10px; border: 3px solid #fff;
@@ -142,11 +143,11 @@
     </div>
 
     <button id="cap-btn" class="submit-btn">
-        📸 Capturar Imagem e Analisar Problema
+        📸 Capturar imagem e analisar problema
     </button>
     
     <button id="send-btn" class="submit-btn" style="display:none; background: var(--success);">
-        ✅ ENVIAR PARA WHATSAPP
+        ✅ Enviar para WhatsApp
     </button>
     
     <button type="button" class="btn-voltar" onclick="voltarAoInicio()">
@@ -161,7 +162,6 @@
     const video = document.getElementById('video');
     const capBtn = document.getElementById('cap-btn');
 
-    // SOLICITA GPS ASSIM QUE A PÁGINA CARREGAR
     window.onload = () => {
         if (window.Android && window.Android.requestLocationUpdate) {
             Android.requestLocationUpdate();
@@ -190,7 +190,8 @@
         window.lat = lat; window.lon = lon;
         enderecoBox.textContent = addr || "Localização identificada";
         startBtn.disabled = false;
-        startBtn.textContent = "▶️ Iniciar Câmera";
+        // Texto do botão corrigido aqui
+        startBtn.textContent = "▶️ Iniciar câmera";
     }
 
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -245,7 +246,7 @@
 
         document.getElementById('preview').src = base64;
         document.getElementById('preview').style.display = 'block';
-        capBtn.textContent = "Analisando...";
+        capBtn.textContent = "Analisando problema...";
 
         try {
             const res = await fetch('https://indicacao-ia.vercel.app/api/analyze-problem', {
