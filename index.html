@@ -26,14 +26,11 @@
             flex-direction: column;
         }
 
-        /* Elementos de Câmera em Segundo Plano */
         video {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
             object-fit: cover; z-index: -1; display: none;
         }
-        canvas { display: none; }
 
-        /* Container Principal do Formulário */
         #initial-form-container {
             position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
             background: #ffffff; padding: 2.2rem; border-radius: 12px;
@@ -46,7 +43,6 @@
             margin: 0 0 1.8rem 0; font-weight: 700; line-height: 1.2;
         }
 
-        /* Rótulos Acima dos Campos */
         .form-group { margin-bottom: 22px; width: 100%; }
         label { 
             display: block; margin-bottom: 8px; font-weight: 600; 
@@ -74,7 +70,6 @@
             width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;
         }
 
-        /* Interface de Captura e IA */
         #capture-ui {
             position: fixed; bottom: 0; left: 0; width: 100%; padding: 2rem 1rem;
             box-sizing: border-box;
@@ -90,7 +85,7 @@
             cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             text-transform: uppercase;
         }
-        .submit-btn:disabled { background: #999; cursor: not-allowed; box-shadow: none; }
+        .submit-btn:disabled { background: #999; cursor: not-allowed; }
 
         #preview {
             max-width: 85%; border-radius: 10px; border: 3px solid #fff;
@@ -115,6 +110,7 @@
 <body>
 
 <video id="video" autoplay playsinline muted></video>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <div id="initial-form-container">
     <h1>Registre um Problema e envie para a Prefeitura</h1>
@@ -158,8 +154,6 @@
     </button>
 </div>
 
-
-
 <script>
     const nomeIn = document.getElementById('nome');
     const startBtn = document.getElementById('start-btn');
@@ -167,26 +161,23 @@
     const video = document.getElementById('video');
     const capBtn = document.getElementById('cap-btn');
 
-    // 1. FILTRO SILENCIOSO DE PALAVRAS PROIBIDAS
-    const blocked = [
-        'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido',
-        'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar',
-        'mãe', 'denúncia', 'denuncia', 'caralho', 'ladrão', 'corrupto',
-        'idiota', 'imbecil', 'vtmnc', 'ladrões', 'ladrao', 'foder', 'fuder',
-        'vsf', 'merda', 'puta', 'bosta', 'foda', 'porra', 'viado', 'veado',
-        'buceta', 'cacete', 'chupa', 'chupar', 'pica', 'piru', 'pika', 'anus'
-    ];
+    // SOLICITA GPS ASSIM QUE A PÁGINA CARREGAR
+    window.onload = () => {
+        if (window.Android && window.Android.requestLocationUpdate) {
+            Android.requestLocationUpdate();
+        }
+    };
 
+    const blocked = ['cu', 'fdp', 'puta', 'merda', 'porra', 'caralho', 'viado', 'cacete']; 
     nomeIn.addEventListener('input', () => {
         let text = nomeIn.value;
-        blocked.forEach(word => {
-            const regex = new RegExp(`\\b${word}\\b`, 'gi');
+        blocked.forEach(w => {
+            const regex = new RegExp(`\\b${w}\\b`, 'gi');
             text = text.replace(regex, '');
         });
         nomeIn.value = text;
     });
 
-    // 2. FUNÇÃO PARA VOLTAR AO INÍCIO (VIA ANDROID)
     function voltarAoInicio() {
         if (window.Android && window.Android.reiniciarApp) {
             Android.reiniciarApp();
@@ -195,7 +186,6 @@
         }
     }
 
-    // 3. RECEBER GPS DO KOTLIN
     function receiveLocationFromAndroid(lat, lon, addr) {
         window.lat = lat; window.lon = lon;
         enderecoBox.textContent = addr || "Localização identificada";
@@ -203,7 +193,6 @@
         startBtn.textContent = "▶️ Iniciar Câmera";
     }
 
-    // 4. MICROFONE COM VIBRAÇÃO (100ms)
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (Speech) {
         const rec = new Speech();
@@ -224,7 +213,6 @@
         mic.addEventListener('mouseup', () => rec.stop());
     }
 
-    // 5. BOTÃO PARA ABRIR CÂMERA
     startBtn.onclick = async () => {
         if (nomeIn.value.trim().length < 4) {
             alert("O nome deve ter pelo menos 4 caracteres.");
@@ -245,7 +233,6 @@
         }
     };
 
-    // 6. CAPTURA DE IMAGEM E ANÁLISE IA
     capBtn.onclick = async () => {
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
@@ -258,7 +245,7 @@
 
         document.getElementById('preview').src = base64;
         document.getElementById('preview').style.display = 'block';
-        capBtn.textContent = "Analisando Problema...";
+        capBtn.textContent = "Analisando...";
 
         try {
             const res = await fetch('https://indicacao-ia.vercel.app/api/analyze-problem', {
@@ -278,7 +265,6 @@
         }
     };
 
-    // 7. ENVIO PARA WHATSAPP
     document.getElementById('send-btn').onclick = () => {
         if (window.Android) {
             Android.enviarRelato(nomeIn.value, "", enderecoBox.textContent, document.getElementById('ia-text').value);
