@@ -38,14 +38,17 @@
             box-sizing: border-box; z-index: 10; display: flex; flex-direction: column;
         }
         #capture-ui {
-            position: fixed; bottom: 0; left: 0; width: 100%; padding: 1rem 1rem 1.5rem 1rem;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.6), transparent);
-            color: white; text-align: center; z-index: 5; display: none; flex-direction: column; gap: 10px;
+            position: fixed; bottom: 0; left: 0; width: 100%; padding: 1.5rem 1rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.7), transparent);
+            color: white; text-align: center; z-index: 5; 
+            display: none; flex-direction: column; 
+            align-items: center; /* Centraliza os itens horizontalmente no flexbox */
+            gap: 12px;
         }
-        .form-group { margin-bottom: 19px; }
-        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
+        .form-group { margin-bottom: 19px; width: 100%; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); text-align: left; }
         
-        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
         input[type="text"] {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
@@ -62,7 +65,6 @@
             display: flex; align-items: center; justify-content: center; z-index: 5;
         }
         .mic-btn img { width: 85%; height: 85%; object-fit: contain; pointer-events: none; }
-        .mic-btn:active { transform: translateY(-50%) scale(1.1); }
         
         h1 { color: #000; text-align: center; margin-top: 0; margin-bottom: 1.5rem; font-weight: 700; font-size: 1.65rem; }
 
@@ -74,9 +76,12 @@
         .submit-btn {
             background: linear-gradient(45deg, var(--primary-color), var(--primary-hover));
             color: white; padding: 1.2rem; border: none; border-radius: 8px;
-            cursor: pointer; width: 100%; font-size: 1.1rem; font-weight: 600;
+            cursor: pointer; width: 100%; max-width: 400px; /* Limita largura para centralizar melhor */
+            font-size: 1.1rem; font-weight: 600;
+            margin: 0 auto; /* Garante centralização extra */
         }
-        #review-area { display: none; text-align: left; background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; }
+        #review-area { display: none; text-align: left; background: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 8px; width: 100%; max-width: 400px; }
+        #review-area label { color: white; margin-bottom: 5px; display: block; }
         #review-area textarea { color: #333; background: #fff; }
     </style>
 </head>
@@ -107,17 +112,28 @@
 </div>
 
 <div id="capture-ui">
-    <img id="preview-img" style="max-width: 90%; max-height: 200px; display: none; margin: auto; border-radius: 8px; border: 2px solid white;">
-    <div id="status-text"></div>
+    <img id="preview-img" style="max-width: 90%; max-height: 200px; display: none; margin: 10px auto; border-radius: 8px; border: 2px solid white;">
+    <div id="status-text" style="margin-bottom: 5px;"></div>
+    
     <div id="review-area">
-        <label style="color: white; margin-bottom: 5px; display: block;">Texto gerado por IA:</label>
+        <label>Texto gerado por IA:</label>
         <textarea id="descricao_ia_review" rows="6"></textarea>
     </div>
 
-    <button type="button" class="submit-btn" id="capture-restart-button">📸 Tirar Foto e Analisar</button>
-    <button id="submit-button" class="submit-btn" style="display:none; background: #28a745; margin-top: 10px;">✅ ENVIAR PARA WHATSAPP</button>
-    <button type="button" onclick="location.reload()" style="background: none; border: none; color: white; margin-top: 10px; text-decoration: underline;">Voltar</button>
+    <button type="button" class="submit-btn" id="capture-restart-button">
+        📸 Capturar Imagem e Analisar Problema
+    </button>
+    
+    <button id="submit-button" class="submit-btn" style="display:none; background: var(--success-color);">
+        ✅ ENVIAR PARA WHATSAPP
+    </button>
+    
+    <button type="button" onclick="location.reload()" style="background: none; border: none; color: white; margin-top: 5px; text-decoration: underline; font-size: 0.9rem;">
+        Voltar ao Início
+    </button>
 </div>
+
+
 
 <script>
     const startCameraButton = document.getElementById('start-camera-button');
@@ -135,7 +151,6 @@
 
     let latAtual, lonAtual, cameraStream;
 
-    // LISTA DE PALAVRAS BLOQUEADAS
     const blockedWords = [
         'inválido', 'fraude', 'roubo', 'cu', 'cú', 'fdp', 'safado', 'bandido',
         'denunciar', 'policia', 'polícia', 'vagabundo', 'pilantra', 'roubar',
@@ -145,7 +160,6 @@
         'buceta', 'cacete', 'chupa', 'chupar', 'pica', 'piru', 'pika', 'anus'
     ];
 
-    // FILTRO SILENCIOSO DE PALAVRAS
     nomeInput.addEventListener('input', function() {
         let value = this.value;
         blockedWords.forEach(word => {
@@ -156,28 +170,25 @@
         });
     });
 
-    // LÓGICA DO MICROFONE
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.lang = 'pt-BR';
         recognition.onresult = (event) => {
             nomeInput.value = event.results[0][0].transcript;
-            nomeInput.dispatchEvent(new Event('input')); // Aplica o filtro após a voz
+            nomeInput.dispatchEvent(new Event('input'));
         };
         const startMic = (e) => {
             e.preventDefault();
             if (navigator.vibrate) navigator.vibrate(100);
             recognition.start();
         };
-        const stopMic = () => recognition.stop();
         micNomeButton.addEventListener('mousedown', startMic);
         micNomeButton.addEventListener('touchstart', startMic);
-        micNomeButton.addEventListener('mouseup', stopMic);
-        micNomeButton.addEventListener('touchend', stopMic);
+        micNomeButton.addEventListener('mouseup', () => recognition.stop());
+        micNomeButton.addEventListener('touchend', () => recognition.stop());
     }
 
-    // RECEBER GPS
     function receiveLocationFromAndroid(latitude, longitude, address) {
         latAtual = latitude; lonAtual = longitude;
         enderecoDisplay.textContent = address || "Localizado";
@@ -185,7 +196,6 @@
         startCameraButton.textContent = '▶️ Iniciar Câmera';
     }
 
-    // BOTÃO DE CÂMERA (COM ALERTA DE 4 CARACTERES)
     startCameraButton.addEventListener('click', async () => {
         if (nomeInput.value.trim().length < 4) {
             alert("O nome deve ter pelo menos 4 caracteres.");
@@ -201,7 +211,8 @@
         canvas.width = video.videoWidth; canvas.height = video.videoHeight;
         canvas.getContext("2d").drawImage(video, 0, 0);
         const imgBase64 = canvas.toDataURL('image/jpeg', 0.5);
-        stopCamera();
+        if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+        video.style.display = 'none';
         previewImg.src = imgBase64; previewImg.style.display = 'block';
         statusText.textContent = 'IA analisando...';
 
@@ -216,13 +227,9 @@
             document.getElementById('review-area').style.display = 'block';
             statusText.textContent = 'Análise concluída!';
             submitButton.style.display = 'block';
+            captureRestartButton.textContent = '🔄 Tirar outra foto';
         } catch (e) { statusText.textContent = 'Erro na análise.'; }
     });
-
-    function stopCamera() {
-        if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
-        video.style.display = 'none';
-    }
 
     submitButton.addEventListener('click', () => {
         if (window.Android) {
