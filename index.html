@@ -45,27 +45,26 @@
         .form-group { margin-bottom: 19px; }
         label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--label-color); }
         
-        /* --- ESTILO DO INPUT COM MICROFONE --- */
         .input-wrapper { position: relative; display: flex; align-items: center; }
         input[type="text"] {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
-            padding-right: 70px; /* Espaço aumentado para o microfone maior */
+            padding-right: 60px; /* Ajustado para o novo tamanho do mic */
         }
         textarea {
             width: 100%; padding: 0.8rem 1rem; border: 1px solid var(--border-color);
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
         }
         
-        /* BOTÃO DO MICROFONE (Aumentado em 50%) */
+        /* BOTÃO DO MICROFONE (Reduzido em 20%) */
         .mic-btn {
             position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
             background: none; border: none; cursor: pointer; 
-            width: 68px; height: 68px; /* Era 45px, agora ~68px */
+            width: 55px; height: 55px; /* Reduzido de 68px para 55px */
             display: flex; align-items: center; justify-content: center; z-index: 5;
         }
-        .mic-btn img { width: 90%; height: 90%; object-fit: contain; pointer-events: none; }
-        .mic-btn:active { transform: translateY(-50%) scale(1.2); }
+        .mic-btn img { width: 85%; height: 85%; object-fit: contain; pointer-events: none; }
+        .mic-btn:active { transform: translateY(-50%) scale(1.1); }
         
         h1 { color: #000; text-align: center; margin-top: 0; margin-bottom: 1.5rem; font-weight: 700; font-size: 1.5rem; }
 
@@ -92,8 +91,7 @@
         <div class="form-group">
             <label for="nome">Seu Nome Completo</label>
             <div class="input-wrapper">
-                <input type="text" id="nome" name="nome" required placeholder="Digite ou use o microfone">
-                <button type="button" class="mic-btn" id="mic-nome">
+                <input type="text" id="nome" name="nome" required> <button type="button" class="mic-btn" id="mic-nome">
                     <img src="pngegg.png" alt="Microfone">
                 </button>
             </div>
