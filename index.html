@@ -26,15 +26,9 @@
             flex-direction: column;
         }
 
-        /* Vídeo da Câmara em Segundo Plano */
-        video {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
-            object-fit: cover; z-index: -1; display: none;
-        }
-
+        video { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; display: none; }
         canvas { display: none; }
 
-        /* Contentor do Formulário Inicial */
         #initial-form-container {
             position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
             background: #ffffff; padding: 2.2rem; border-radius: 12px;
@@ -42,29 +36,17 @@
             box-sizing: border-box; z-index: 10;
         }
 
-        h1 { 
-            font-size: 1.5rem; text-align: center; color: #000; 
-            margin: 0 0 1.8rem 0; font-weight: 700; line-height: 1.2;
-        }
+        h1 { font-size: 1.5rem; text-align: center; color: #000; margin: 0 0 1.8rem 0; font-weight: 700; line-height: 1.2; }
 
-        /* Labels no Topo dos Campos */
         .form-group { margin-bottom: 22px; width: 100%; }
-        label { 
-            display: block; margin-bottom: 8px; font-weight: 600; 
-            color: var(--label-color); font-size: 0.95rem;
-        }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--label-color); font-size: 0.95rem; }
         
         .input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
         
         input[type="text"], input[type="tel"] {
             width: 100%; padding: 14px; border: 1px solid #ccc;
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
-            background: #fff;
-        }
-        
-        /* Espaço extra para não esconder o texto atrás dos microfones */
-        #nome, #whatsapp {
-            padding-right: 65px; 
+            background: #fff; padding-right: 65px; 
         }
 
         #endereco-display {
@@ -74,13 +56,20 @@
             box-sizing: border-box; width: 100%;
         }
 
+        /* Botões de Microfone Melhorados para Push-to-Talk */
         .mic-btn {
             position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
             background: none; border: none; cursor: pointer; 
             width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;
+            -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+            border-radius: 50%; transition: background-color 0.2s ease;
+        }
+        
+        /* Feedback visual quando o botão está a ser pressionado */
+        .mic-btn.recording {
+            background-color: rgba(220, 53, 69, 0.15);
         }
 
-        /* Interface de Captura e Análise */
         #capture-ui {
             position: fixed; bottom: 0; left: 0; width: 100%; padding: 2rem 1rem;
             box-sizing: border-box;
@@ -97,24 +86,11 @@
         }
         .submit-btn:disabled { background: #999; cursor: not-allowed; box-shadow: none; }
 
-        #preview {
-            max-width: 85%; border-radius: 10px; border: 3px solid #fff;
-            display: none; margin-bottom: 10px;
-        }
-
+        #preview { max-width: 85%; border-radius: 10px; border: 3px solid #fff; display: none; margin-bottom: 10px; }
         #review-area { width: 100%; max-width: 400px; display: none; text-align: left; }
         #review-area label { color: white; margin-bottom: 6px; }
-        
-        textarea { 
-            width: 100%; padding: 12px; border-radius: 8px; border: none; 
-            font-family: inherit; font-size: 1rem; color: #333; box-sizing: border-box;
-        }
-
-        .btn-voltar {
-            color: white; background: none; border: none; 
-            text-decoration: underline; cursor: pointer; font-size: 0.95rem;
-            margin-top: 5px;
-        }
+        textarea { width: 100%; padding: 12px; border-radius: 8px; border: none; font-family: inherit; font-size: 1rem; color: #333; box-sizing: border-box; }
+        .btn-voltar { color: white; background: none; border: none; text-decoration: underline; cursor: pointer; font-size: 0.95rem; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -184,7 +160,6 @@
     
     let imagemAtualBase64 = "";
 
-    // 1. FILTROS DE DIGITAÇÃO E PROTEÇÕES
     nomeIn.addEventListener('input', () => {
         let text = nomeIn.value;
         text = text.replace(/[0-9]/g, '');
@@ -197,11 +172,9 @@
     });
 
     whatsIn.addEventListener('input', () => {
-        // Aceita apenas números, espaços, parênteses e traços
         whatsIn.value = whatsIn.value.replace(/[^0-9()\s-]/g, '');
     });
 
-    // 2. REINICIAR APP (MANTÉM DENTRO DO APLICATIVO)
     function voltarAoInicio() {
         if (window.Android && window.Android.reiniciarApp) {
             Android.reiniciarApp();
@@ -210,7 +183,6 @@
         }
     }
 
-    // 3. RECEBER GPS DO ANDROID
     function receiveLocationFromAndroid(lat, lon, addr) {
         window.lat = lat; window.lon = lon;
         enderecoBox.textContent = addr || "Localização identificada";
@@ -218,43 +190,55 @@
         startBtn.textContent = "▶️ Iniciar câmera";
     }
 
-    // Solicitamos GPS assim que a página carrega
     window.onload = () => {
         if (window.Android) Android.requestLocationUpdate();
     };
 
-    // 4. MICROFONES COM VIBRAÇÃO (SISTEMA DINÂMICO)
+    // SISTEMA PUSH-TO-TALK MELHORADO
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (Speech) {
-        // Função para configurar o microfone em qualquer campo
         function setupMic(btnId, inputElement) {
             const rec = new Speech();
             rec.lang = 'pt-BR';
-            rec.onresult = (e) => { 
-                inputElement.value = e.results[0][0].transcript;
-                inputElement.dispatchEvent(new Event('input')); // Dispara os filtros de segurança
-            };
-            
-            const micBtn = document.getElementById(btnId);
-            const handleMicStart = (e) => {
-                e.preventDefault();
-                if (navigator.vibrate) navigator.vibrate(100);
-                rec.start();
-            };
-            const handleMicStop = () => rec.stop();
+            rec.interimResults = true; // Permite ver o texto a ser escrito em tempo real
+            rec.continuous = true; // Continua a ouvir até ao utilizador soltar
 
-            micBtn.addEventListener('touchstart', handleMicStart);
-            micBtn.addEventListener('mousedown', handleMicStart);
-            micBtn.addEventListener('touchend', handleMicStop);
-            micBtn.addEventListener('mouseup', handleMicStop);
+            const micBtn = document.getElementById(btnId);
+
+            rec.onresult = (e) => {
+                let finalTranscript = '';
+                for (let i = 0; i < e.results.length; ++i) {
+                    finalTranscript += e.results[i][0].transcript;
+                }
+                inputElement.value = finalTranscript;
+                inputElement.dispatchEvent(new Event('input')); // Dispara os filtros numéricos/palavras
+            };
+
+            const handleStart = (e) => {
+                e.preventDefault(); // Evita menu de copiar/colar nativo
+                if (navigator.vibrate) navigator.vibrate(50);
+                micBtn.classList.add('recording');
+                try { rec.start(); } catch(err) {} 
+            };
+
+            const handleStop = (e) => {
+                e.preventDefault();
+                micBtn.classList.remove('recording');
+                try { rec.stop(); } catch(err) {}
+            };
+
+            // Eventos que disparam apenas enquanto o botão está pressionado
+            micBtn.addEventListener('touchstart', handleStart, {passive: false});
+            micBtn.addEventListener('touchend', handleStop);
+            micBtn.addEventListener('mousedown', handleStart);
+            micBtn.addEventListener('mouseup', handleStop);
+            micBtn.addEventListener('mouseleave', handleStop); // Cancela se o dedo deslizar fora do botão
         }
 
-        // Ativa os microfones para o Nome e WhatsApp
         setupMic('mic-nome', nomeIn);
         setupMic('mic-whatsapp', whatsIn);
     }
 
-    // 5. INICIAR CÂMERA (VALIDAÇÃO DUPLA)
     startBtn.onclick = async () => {
         if (nomeIn.value.trim().length < 4) {
             alert("Por favor, introduza o seu nome completo (mínimo 4 letras).");
@@ -281,7 +265,6 @@
         }
     };
 
-    // 6. CAPTURAR E ANALISAR
     capBtn.onclick = async () => {
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
@@ -315,7 +298,6 @@
         }
     };
 
-    // 7. ENVIO FINAL POR E-MAIL (VIA KOTLIN)
     document.getElementById('send-btn').onclick = () => {
         let nomeComContato = nomeIn.value.trim() + " (WhatsApp/Tel: " + whatsIn.value.trim() + ")";
 
