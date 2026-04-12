@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-pt">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -26,9 +26,11 @@
             flex-direction: column;
         }
 
+        /* Vídeo da Câmera em Segundo Plano */
         video { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; display: none; }
         canvas { display: none; }
 
+        /* Contêiner do Formulário Inicial */
         #initial-form-container {
             position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
             background: #ffffff; padding: 2.2rem; border-radius: 12px;
@@ -194,14 +196,14 @@
         if (window.Android) Android.requestLocationUpdate();
     };
 
-    // SISTEMA PUSH-TO-TALK MELHORADO
+    // SISTEMA PUSH-TO-TALK COM VIBRAÇÃO DE 200ms
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (Speech) {
         function setupMic(btnId, inputElement) {
             const rec = new Speech();
             rec.lang = 'pt-BR';
-            rec.interimResults = true; // Permite ver o texto a ser escrito em tempo real
-            rec.continuous = true; // Continua a ouvir até ao utilizador soltar
+            rec.interimResults = true; 
+            rec.continuous = true; 
 
             const micBtn = document.getElementById(btnId);
 
@@ -211,12 +213,12 @@
                     finalTranscript += e.results[i][0].transcript;
                 }
                 inputElement.value = finalTranscript;
-                inputElement.dispatchEvent(new Event('input')); // Dispara os filtros numéricos/palavras
+                inputElement.dispatchEvent(new Event('input')); 
             };
 
             const handleStart = (e) => {
-                e.preventDefault(); // Evita menu de copiar/colar nativo
-                if (navigator.vibrate) navigator.vibrate(50);
+                e.preventDefault(); 
+                if (navigator.vibrate) navigator.vibrate(200); // Vibração atualizada para 200ms
                 micBtn.classList.add('recording');
                 try { rec.start(); } catch(err) {} 
             };
@@ -227,12 +229,11 @@
                 try { rec.stop(); } catch(err) {}
             };
 
-            // Eventos que disparam apenas enquanto o botão está pressionado
             micBtn.addEventListener('touchstart', handleStart, {passive: false});
             micBtn.addEventListener('touchend', handleStop);
             micBtn.addEventListener('mousedown', handleStart);
             micBtn.addEventListener('mouseup', handleStop);
-            micBtn.addEventListener('mouseleave', handleStop); // Cancela se o dedo deslizar fora do botão
+            micBtn.addEventListener('mouseleave', handleStop); 
         }
 
         setupMic('mic-nome', nomeIn);
@@ -241,7 +242,7 @@
 
     startBtn.onclick = async () => {
         if (nomeIn.value.trim().length < 4) {
-            alert("Por favor, insira o seu nome completo (mínimo 4 letras).");
+            alert("Por favor, introduza o seu nome completo (mínimo 4 letras).");
             return;
         }
         
@@ -260,7 +261,7 @@
             video.srcObject = stream;
             video.style.display = 'block';
         } catch (e) {
-            alert("Não foi possível aceder à câmara.");
+            alert("Não foi possível acessar a câmera.");
             voltarAoInicio();
         }
     };
