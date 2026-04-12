@@ -56,10 +56,15 @@
         
         .input-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
         
-        input[type="text"] {
+        input[type="text"], input[type="tel"] {
             width: 100%; padding: 14px; border: 1px solid #ccc;
             border-radius: 8px; box-sizing: border-box; font-size: 1rem;
-            padding-right: 65px; background: #fff;
+            background: #fff;
+        }
+        
+        /* Espaço extra apenas para o campo de nome que tem o microfone */
+        #nome {
+            padding-right: 65px; 
         }
 
         #endereco-display {
@@ -130,6 +135,13 @@
     </div>
 
     <div class="form-group">
+        <label for="whatsapp">Seu WhatsApp</label>
+        <div class="input-wrapper">
+            <input type="tel" id="whatsapp" name="whatsapp" placeholder="(XX) 9XXXX-XXXX" autocomplete="off">
+        </div>
+    </div>
+
+    <div class="form-group">
         <label>Sua Localização Atual (GPS)</label>
         <div id="endereco-display">Buscando sua localização...</div>
     </div>
@@ -160,6 +172,7 @@
 
 <script>
     const nomeIn = document.getElementById('nome');
+    const whatsIn = document.getElementById('whatsapp');
     const startBtn = document.getElementById('start-btn');
     const enderecoBox = document.getElementById('endereco-display');
     const video = document.getElementById('video');
@@ -167,10 +180,10 @@
     
     let imagemAtualBase64 = ""; // Armazena a imagem para envio
 
-    // 1. FILTRO: APAGA NÚMEROS E PALAVRAS BLOQUEADAS
+    // 1. FILTROS DE DIGITAÇÃO
     nomeIn.addEventListener('input', () => {
         let text = nomeIn.value;
-        // Remove números
+        // Remove números do nome
         text = text.replace(/[0-9]/g, '');
         // Remove palavras impróprias
         const blocked = ['cu', 'fdp', 'puta', 'merda', 'porra', 'caralho', 'viado', 'cacete']; 
@@ -179,6 +192,11 @@
             text = text.replace(regex, '');
         });
         nomeIn.value = text;
+    });
+
+    // Aceita apenas números, espaços, parênteses e traços no WhatsApp
+    whatsIn.addEventListener('input', () => {
+        whatsIn.value = whatsIn.value.replace(/[^0-9()\s-]/g, '');
     });
 
     // 2. REINICIAR APP (MANTÉM DENTRO DO APLICATIVO)
@@ -224,12 +242,18 @@
         mic.addEventListener('mouseup', () => rec.stop());
     }
 
-    // 5. INICIAR CÂMERA (VALIDAÇÃO DE NOME)
+    // 5. INICIAR CÂMERA (VALIDAÇÃO DE NOME E WHATSAPP)
     startBtn.onclick = async () => {
         if (nomeIn.value.trim().length < 4) {
             alert("Por favor, introduza o seu nome completo (mínimo 4 letras).");
             return;
         }
+        
+        if (whatsIn.value.trim().length < 8) {
+            alert("Por favor, insira um número de WhatsApp válido.");
+            return;
+        }
+
         document.getElementById('initial-form-container').style.display = 'none';
         document.getElementById('capture-ui').style.display = 'flex';
         
@@ -282,9 +306,12 @@
 
     // 7. ENVIO FINAL POR E-MAIL (VIA KOTLIN)
     document.getElementById('send-btn').onclick = () => {
+        // Junta o Nome e o WhatsApp em uma única string para evitar mudanças no Kotlin
+        let nomeComContato = nomeIn.value.trim() + " (WhatsApp: " + whatsIn.value.trim() + ")";
+
         if (window.Android) {
             Android.enviarRelato(
-                nomeIn.value,
+                nomeComContato,
                 enderecoBox.textContent,
                 document.getElementById('ia-text').value,
                 imagemAtualBase64
