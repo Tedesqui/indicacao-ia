@@ -62,8 +62,8 @@
             background: #fff;
         }
         
-        /* Espaço extra apenas para o campo de nome que tem o microfone */
-        #nome {
+        /* Espaço extra para não esconder o texto atrás dos microfones */
+        #nome, #whatsapp {
             padding-right: 65px; 
         }
 
@@ -120,6 +120,7 @@
 <body>
 
 <video id="video" autoplay playsinline muted></video>
+<canvas id="canvas" style="display:none;"></canvas>
 
 <div id="initial-form-container">
     <h1>Registre um Problema e envie para a Prefeitura</h1>
@@ -135,9 +136,12 @@
     </div>
 
     <div class="form-group">
-        <label for="whatsapp">Seu WhatsApp</label>
+        <label for="whatsapp">WhatsApp/Telefone</label>
         <div class="input-wrapper">
             <input type="tel" id="whatsapp" name="whatsapp" placeholder="(XX) 9XXXX-XXXX" autocomplete="off">
+            <button type="button" class="mic-btn" id="mic-whatsapp">
+                <img src="pngegg.png" alt="Microfone" width="45">
+            </button>
         </div>
     </div>
 
@@ -178,14 +182,12 @@
     const video = document.getElementById('video');
     const capBtn = document.getElementById('cap-btn');
     
-    let imagemAtualBase64 = ""; // Armazena a imagem para envio
+    let imagemAtualBase64 = "";
 
-    // 1. FILTROS DE DIGITAÇÃO
+    // 1. FILTROS DE DIGITAÇÃO E PROTEÇÕES
     nomeIn.addEventListener('input', () => {
         let text = nomeIn.value;
-        // Remove números do nome
         text = text.replace(/[0-9]/g, '');
-        // Remove palavras impróprias
         const blocked = ['cu', 'fdp', 'puta', 'merda', 'porra', 'caralho', 'viado', 'cacete']; 
         blocked.forEach(w => {
             const regex = new RegExp(`\\b${w}\\b`, 'gi');
@@ -194,8 +196,8 @@
         nomeIn.value = text;
     });
 
-    // Aceita apenas números, espaços, parênteses e traços no WhatsApp
     whatsIn.addEventListener('input', () => {
+        // Aceita apenas números, espaços, parênteses e traços
         whatsIn.value = whatsIn.value.replace(/[^0-9()\s-]/g, '');
     });
 
@@ -221,28 +223,38 @@
         if (window.Android) Android.requestLocationUpdate();
     };
 
-    // 4. MICROFONE COM VIBRAÇÃO (100ms)
+    // 4. MICROFONES COM VIBRAÇÃO (SISTEMA DINÂMICO)
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (Speech) {
-        const rec = new Speech();
-        rec.lang = 'pt-BR';
-        rec.onresult = (e) => { 
-            nomeIn.value = e.results[0][0].transcript;
-            nomeIn.dispatchEvent(new Event('input')); 
-        };
-        const mic = document.getElementById('mic-nome');
-        const handleMic = (e) => {
-            e.preventDefault();
-            if (navigator.vibrate) navigator.vibrate(100);
-            rec.start();
-        };
-        mic.addEventListener('touchstart', handleMic);
-        mic.addEventListener('mousedown', handleMic);
-        mic.addEventListener('touchend', () => rec.stop());
-        mic.addEventListener('mouseup', () => rec.stop());
+        // Função para configurar o microfone em qualquer campo
+        function setupMic(btnId, inputElement) {
+            const rec = new Speech();
+            rec.lang = 'pt-BR';
+            rec.onresult = (e) => { 
+                inputElement.value = e.results[0][0].transcript;
+                inputElement.dispatchEvent(new Event('input')); // Dispara os filtros de segurança
+            };
+            
+            const micBtn = document.getElementById(btnId);
+            const handleMicStart = (e) => {
+                e.preventDefault();
+                if (navigator.vibrate) navigator.vibrate(100);
+                rec.start();
+            };
+            const handleMicStop = () => rec.stop();
+
+            micBtn.addEventListener('touchstart', handleMicStart);
+            micBtn.addEventListener('mousedown', handleMicStart);
+            micBtn.addEventListener('touchend', handleMicStop);
+            micBtn.addEventListener('mouseup', handleMicStop);
+        }
+
+        // Ativa os microfones para o Nome e WhatsApp
+        setupMic('mic-nome', nomeIn);
+        setupMic('mic-whatsapp', whatsIn);
     }
 
-    // 5. INICIAR CÂMERA (VALIDAÇÃO DE NOME E WHATSAPP)
+    // 5. INICIAR CÂMERA (VALIDAÇÃO DUPLA)
     startBtn.onclick = async () => {
         if (nomeIn.value.trim().length < 4) {
             alert("Por favor, introduza o seu nome completo (mínimo 4 letras).");
@@ -250,7 +262,7 @@
         }
         
         if (whatsIn.value.trim().length < 8) {
-            alert("Por favor, insira um número de WhatsApp válido.");
+            alert("Por favor, insira um número de WhatsApp/Telefone válido.");
             return;
         }
 
@@ -276,7 +288,6 @@
         canvas.height = video.videoHeight;
         canvas.getContext('2d').drawImage(video, 0, 0);
         
-        // Guardamos a imagem em Base64 para o anexo do e-mail
         imagemAtualBase64 = canvas.toDataURL('image/jpeg', 0.6);
 
         if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
@@ -306,8 +317,7 @@
 
     // 7. ENVIO FINAL POR E-MAIL (VIA KOTLIN)
     document.getElementById('send-btn').onclick = () => {
-        // Junta o Nome e o WhatsApp em uma única string para evitar mudanças no Kotlin
-        let nomeComContato = nomeIn.value.trim() + " (WhatsApp: " + whatsIn.value.trim() + ")";
+        let nomeComContato = nomeIn.value.trim() + " (WhatsApp/Tel: " + whatsIn.value.trim() + ")";
 
         if (window.Android) {
             Android.enviarRelato(
